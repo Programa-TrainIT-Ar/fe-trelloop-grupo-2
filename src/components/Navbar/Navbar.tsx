@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
-const Navbar = () => {
+const   Navbar = () => {
     const router=useRouter()
     const goToLogin=()=>{
         router.push("/login")
@@ -13,7 +13,7 @@ const Navbar = () => {
         router.push("/")
     }
     return (
-        <div className="flex max-width[1366] mx-auto justify-between bg-[#222222] h-[72px] items-center">
+        <div className="flex max-width[1366] justify-between bg-[#222222] h-[72px] items-center z-50">
             <div className="ml-5">
                 <Image
                     src="/assets/logo/logo-dark-trainit.webp"

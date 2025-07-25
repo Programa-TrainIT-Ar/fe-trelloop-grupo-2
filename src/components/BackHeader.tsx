@@ -16,7 +16,7 @@ export default function BackHeader({title}: BackHeaderProps) {
   return (
     <div
       onClick={handleBack}
-      className="flex items-center space-x-2 cursor-pointer ps-7 h-[64px] bg-header border-b border-[#2B2B2B]"
+      className="flex items-center space-x-2 cursor-pointer ps-7 h-[64px] bg-header border-b border-[#2B2B2B] text-default z-10"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -27,7 +27,7 @@ export default function BackHeader({title}: BackHeaderProps) {
       >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
       </svg>
-      <h1 className="text-lg font-semibold">{title}</h1>
+      <h1 className="text-lg font-semibold cursor-pointer">{title}</h1>
     </div>
   );
 }
