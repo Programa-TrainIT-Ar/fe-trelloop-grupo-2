@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import SuccessModal from "../../components/SuccessModal";
+import SuccessModal from "../../components/register/SuccessModal";
 import IlustracionUsuario from "../../assets/images/ilustracion-usuario.svg";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import Background from "../../components/register/Background";
@@ -259,7 +259,7 @@ export default function RegisterPage() {
 
                 <button
                   type="submit"
-                  className="uppercase w-full h-[40px] my-6 bg-primary-500 text-white py-2  rounded-[8px]"
+                  className="uppercase w-full h-[40px] my-6 bg-primary-500 hover:bg-primary-600 text-white py-2  rounded-[8px]"
                 >
                   Registrarme
                 </button>
