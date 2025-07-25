@@ -2,7 +2,7 @@
 import { authService, registerUserService } from "services/authService";
 import { RegisterData } from "../types/user";
 import { ValidationError } from '../types/validatesError';
-import { UserProfile } from "app/types/user";
+import { UserProfile } from "../types/user";
 import { LoginRequest, LoginResponse } from "types/auth";
 
 
