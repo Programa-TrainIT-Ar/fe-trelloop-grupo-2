@@ -92,8 +92,8 @@ export default function RegisterPage() {
 
   return (
     <>
-      <Navbar/>
       <div className="w-full bg-dual-circles text-text-default h-screen relative flex flex-col">
+        <Navbar />
         <div className="absolute inset-0 z-0">
           <Background />
         </div>
@@ -107,12 +107,12 @@ export default function RegisterPage() {
           </div>
 
           {/* Contenedor del Formulario */}
-          <div className="w-full z-10 lg:w-1/2 flex justify-start items-center">
+          <div className="w-full z-10 lg:w-1/2 flex justify-start items-center text-default">
             <div className="w-full px-8 lg:px-0 lg:pr-16 max-w-[661px]">
               <form noValidate onSubmit={handleSubmit} className="w-full">
                 <div className="flex space-x-2">
-                  <div className="flex flex-col w-full">
-                    <label htmlFor="firstName" className="mb-2">
+                  <div className="flex flex-col w-full ">
+                    <label htmlFor="firstName" className="mb-2 ">
                       Nombres <span className="text-primary-500">*</span>
                     </label>
                     <input
