@@ -18,7 +18,7 @@
 
 ### 4 Crea un archivo .env
 
-### 5 Copia al archivo .env el contenido de .env.example
+### 5 Copia al archivo .env el contenido de .env.sample
 
 ### 6 Instala las dependencias del proyecto
 
