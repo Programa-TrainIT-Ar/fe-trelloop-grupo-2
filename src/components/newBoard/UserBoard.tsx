@@ -1,20 +1,30 @@
-import { UserCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import Image from "next/image";
 
 interface UserBoardProps {
   name: string;
-  onRemove?: () => void;
+  username: string;
+  img: string;
 }
 
-export const UserBoard = ({ name, onRemove }: UserBoardProps) => {
+export const UserBoard = ({ name, username, img}: UserBoardProps) => {
   return (
-    <div className="flex items-center bg-[#262626] text-white px-3 py-2 rounded-md gap-2">
-      <UserCircleIcon className="h-5 w-5 text-blue-400" />
-      <span>{name}</span>
-      {onRemove && (
-        <button onClick={onRemove}>
-          <XMarkIcon className="h-4 w-4 text-gray-400 hover:text-white" />
-        </button>
-      )}
+    <div className="member flex items-center mr-[15px]">
+      <div className="member-img mr-[5px]">
+        <Image
+          src={img}
+          alt="member-img"
+          width={28}
+          height={28}
+          className="rounded-2xl"
+        />
+      </div>
+
+      <div className="member-data">
+        <div className="member-name text-white text-xs">{name}</div>
+        <div className="member-username text-white text-xs">{username}</div>
+      </div>
+
     </div>
   );
 };
+

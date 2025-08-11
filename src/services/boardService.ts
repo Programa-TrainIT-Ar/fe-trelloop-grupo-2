@@ -1,4 +1,7 @@
 import { authController } from "../controllers/authController";
+import { ValidationError } from "../types/validatesError";
+
+
 import { getToken } from "../store/authStore";
 
 export const getUserBoards = async () => {
@@ -31,6 +34,36 @@ export const getUserBoards = async () => {
   }
 };
 
+export const createBoardService = async (data: FormData): Promise<void> => {
+  const token = authController.token;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!token) {
+    throw new ValidationError("No hay token de autenticación.", "general");
+  }
+
+  if (!apiUrl) {
+    throw new ValidationError("No se ha definido la URL de la API.", "general");
+  }
+
+  const response = await fetch(`${apiUrl}/api/boards/`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: data, // ← FormData va directo
+  });
+
+  const responseData = await response.json();
+
+  if (!response.ok) {
+    throw new ValidationError(
+      responseData.message || "Error al crear el tablero",
+      "general"
+    );
+  }
+};
+
 export const deleteBoardById = async (boardId: string) => {
   const token = getToken();
 
@@ -47,3 +80,26 @@ export const deleteBoardById = async (boardId: string) => {
 
   return res.json();
 };
+
+export const toggleFavoriteBoard = async (boardId: string) => {
+  const token = getToken();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  try {
+    const response = await fetch(`${apiUrl}/api/boards/${boardId}/favorite`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error al actualizar favorito:", error);
+  }
+};
+

@@ -1,7 +1,7 @@
 import Background from './Background';
 import HeaderContent from './HeaderContent';
 import HeaderImages from './HeaderImages';
-import Footer from 'components/Footer/Footer';
+import Footer from 'components/footer/Footer';
 
 const Header = () => {
   return (

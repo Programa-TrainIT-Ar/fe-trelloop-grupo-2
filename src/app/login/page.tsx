@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import { useState } from "react";
+import { useState, useEffect} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useAuthStore } from "store/authStore";
 import Image from "next/image";
+import LogoutBanner from "components/LogoutBanner";
 
 const Login = () => {
   const router = useRouter();
@@ -14,7 +15,13 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const { login, loading, user, isAuthenticated } = useAuthStore();
+  const { login, loading, user, isAuthenticated, logoutReason, clearLogoutReason } = useAuthStore();
+
+  // Limpiar el banner cuando el componente se monta (opcional)
+  useEffect(() => {
+    // Solo limpiar si el usuario está navegando desde otra página
+    // pero mantener el mensaje si viene de logout por inactividad
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +58,10 @@ const Login = () => {
     }
   };
 
+  const handleDismissAlert = () => {
+    clearLogoutReason();
+  };
+
   return (
     <div
       className="w-full h-screen bg-cover bg-center bg-no-repeat text-text-default flex flex-col"
@@ -68,6 +79,16 @@ const Login = () => {
           </h2>
           <hr className="border-gray-600" />
         </div>
+
+      {/* Banner de alerta (solo si hay logoutReason) */}
+        {logoutReason && (
+          <div className="px-4 pt-4">
+            <LogoutBanner 
+              reason={logoutReason} 
+              onDismiss={handleDismissAlert} 
+            />
+          </div>
+        )}
 
         {/* Contenido principal */}
         <div className="flex-1 flex text-white">
