@@ -4,10 +4,14 @@ import { createListService } from "services/listService";
 type Side = "right" | "left";
 
 interface AddListPopoverProps {
-  boardId: number;
+  boardId: string;
+  getBoardLists: () => Promise<void>;
 }
 
-const AddListPopover: React.FC<AddListPopoverProps> = ({ boardId }) => {
+const AddListPopover: React.FC<AddListPopoverProps> = ({
+  boardId,
+  getBoardLists,
+}) => {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [side, setSide] = useState<Side>("right");
@@ -108,14 +112,15 @@ const AddListPopover: React.FC<AddListPopoverProps> = ({ boardId }) => {
     if (!name.trim()) return;
     try {
       await createListService({
-      name,
-      side: insertSide,
-      boardId: Number(boardId),
-    });
+        name,
+        side: insertSide,
+        boardId: Number(boardId),
+      });
       setName("");
       setInsertSide("right");
       setOpen(false);
       setVisible(false);
+      await getBoardLists();
     } catch (err) {
       console.error(err);
     }

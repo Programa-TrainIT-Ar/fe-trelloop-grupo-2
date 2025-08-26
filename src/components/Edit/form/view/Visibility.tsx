@@ -11,7 +11,7 @@ const Visibility = ({ value, onChange }: VisibilityProps) => {
     <div className="space-y-6">
       {/* Opción Privado */}
       <label className="flex items-start space-x-3 cursor-pointer group">
-        <div className="flex-shrink-0 mt-0.5">
+        <div className="flex-shrink-0 mt-3">
           <input
             type="radio"
             value="PRIVATE"
@@ -48,7 +48,7 @@ const Visibility = ({ value, onChange }: VisibilityProps) => {
 
       {/* Opción Público */}
       <label className="flex items-start space-x-3 cursor-pointer group">
-        <div className="flex-shrink-0 mt-0.5">
+        <div className="flex-shrink-0 mt-3">
           <input
             type="radio"
             value="PUBLIC"

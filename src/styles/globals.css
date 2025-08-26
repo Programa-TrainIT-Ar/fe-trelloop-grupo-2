@@ -2,3 +2,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;;
+
+/* Scrollbar personalizado */
+@layer utilities {
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background-color: #4b5563; /* thumb (barra) */
+    border-radius: 9999px;
+  }
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background-color: #1f2937; /* track (fondo) */
+  }
+  .scrollbar-custom::-webkit-scrollbar-corner {
+    background: #1f2937; /*color de la esquina esquina */
+  }
+}

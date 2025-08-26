@@ -37,7 +37,7 @@ export default function DashboardSidebar() {
 
       {/* Botón Miembros */}
       <Link
-        href="#"
+        href="/not-found"
         className="flex items-center gap-2 w-[178px] h-[40px] rounded-[8px] px-4 text-white text-[14px] font-poppins font-normal"
       >
         <Image
@@ -51,7 +51,7 @@ export default function DashboardSidebar() {
 
       {/* Botón Configuración */}
       <Link
-        href="#"
+        href="/not-found"
         className="flex items-center gap-2 w-[178px] h-[40px] rounded-[8px] px-4 text-white text-[14px] font-poppins font-normal"
       >
         <Image

@@ -63,12 +63,12 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
 
         {/* Iconos derecha */}
         <div className="flex items-center gap-4 relative">
-          <button className="w-8 h-8 bg-[#2B2B2B] rounded-md flex items-center justify-center">
+          <button onClick={() => router.push("/not-found")} className="w-8 h-8 bg-[#2B2B2B] rounded-md flex items-center justify-center">
             <img src="/assets/icons/bell.svg" alt="Notificación" className="w-4 h-4" />
           </button>
 
           {/* Botón de perfil */}
-          <button
+          <button 
             className="w-8 h-8 bg-[#2B2B2B] rounded-full flex items-center justify-center"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           >
@@ -97,7 +97,7 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
               {/* Opciones */}
               <div className="flex flex-col gap-4 text-white font-medium text-[14px]">
                 <button
-                  onClick={goToProfile}
+                  onClick={() => router.push("/not-found")}
                   className="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-[#3A3A3A] transition"
                 >
                   <img src="/assets/icons/user.png" alt="Perfil" className="w-5 h-5" />
@@ -105,7 +105,7 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
                 </button>
 
                 <button
-                  onClick={goToChangePassword}
+                  onClick={() => router.push("/not-found")}
                   className="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-[#3A3A3A] transition"
                 >
                   <img src="/assets/icons/key.png" alt="Contraseña" className="w-5 h-5" />
