@@ -1,21 +1,15 @@
 import React, { useState } from "react";
 import AddListModal from "./AddListButton";
+import { useRouter } from "next/navigation";
 import { useBoardLists } from "hooks/useBoardLists";
 import { updateListService } from "../../services/updateListService";
 import DeleteListButton from "./DeleteListButton";
+import Tarjeta from "./Tarjetas";
 
-interface Tarea {
-  board_id: number;
-  id: number;
-  etiquetas: string;
-  descripcion: string;
-  personas: number;
-  comentarios: number;
-}
-
-const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean }> = ({
+const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean; isBoardMember?: boolean }> = ({
   boardId,
   isBoardOwner = false,
+  isBoardMember = false,
 }) => {
   const { boardLists, loading, error, getBoardLists } = useBoardLists(boardId);
 
@@ -41,10 +35,15 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean }> = ({
   if (loading) return <div>Cargando...</div>;
   if (error) return <div>Error: {error}</div>;
 
+  const router = useRouter();
+
+  const goToAddTask = (listId: string | number) => {
+    router.push(`/boardList/${boardId}/lists/${listId}/addtask`);
+  };
+
   return (
     <div className="flex gap-4 p-4 bg-[#1a1a1a] overflow-x-auto scrollbar-custom w-full h-full">
-      {Array.isArray(boardLists) &&
-        boardLists.length > 0 &&
+      {Array.isArray(boardLists) && boardLists.length > 0 ? (
         boardLists.map((list) => (
           <div
             key={list.id}
@@ -52,7 +51,6 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean }> = ({
           >
             {/* Encabezado */}
             <div className="flex items-center px-3 py-1 rounded-t-md bg-neutral-600">
-              {/* Contenedor título/input */}
               <div className="flex-1 min-w-0">
                 {editandoListaId === list.id ? (
                   <input
@@ -68,31 +66,24 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean }> = ({
                     autoFocus
                   />
                 ) : (
-                  <h2 className="text-white font-semibold truncate">
+                  <h2 className="text-white font-semibold truncate ">
                     {list.name}
                   </h2>
                 )}
               </div>
 
               {/* Contenedor íconos */}
-              <div className="flex items-center gap-2 flex-shrink-0 ">
-                {/* Contador de tareas */}
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-white">{list.cards.length}</span>
-                {/* Icono de edición */}
                 <img
                   src="/assets/icons/square-pen-white.svg"
                   alt="Editar lista"
                   className="w-4 h-4 cursor-pointer"
                   onClick={() => iniciarEdicion(list.id, list.name)}
                 />
-                {/* Botón eliminar lista */}
                 <DeleteListButton
                   boardId={boardId}
-                  list={{
-                    id: list.id,
-                    name: list.name,
-                    cards: list.cards,
-                  }}
+                  list={list}
                   getBoardLists={getBoardLists}
                   isBoardOwner={isBoardOwner}
                 />
@@ -100,43 +91,52 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean }> = ({
             </div>
 
             {/* Lista de tareas */}
-            <div className="flex-1 overflow-y-auto overflow-x-auto space-y-2">
+            <div className=" flex flex-col gap-3 bg-[#2b2b2b] p-2 rounded-b-md flex-1">
               {list.cards.map((tarea) => (
-                <div
+                <Tarjeta
                   key={tarea.id}
-                  className="bg-[#3a3a3a] rounded-md p-3 border-l-4"
-                >
-                  <div className="text-gray-400 text-sm mb-2">
-                    {tarea.etiquetas}
-                  </div>
-                  <div className="text-white text-sm mb-2">
-                    {tarea.descripcion}
-                  </div>
-                  <div className="flex justify-between text-gray-400 text-sm">
-                    <span>👥 {tarea.personas}</span>
-                    <span>💬 {tarea.comentarios}</span>
-                  </div>
-                </div>
+                  descripcion={tarea.title}
+                  editURL={`/boardList/${boardId}/lists/${list.id}/cards/${tarea.id}`}
+                  etiquetas={
+                    tarea.tags && tarea.tags.length > 0
+                      ? tarea.tags.map((tag: any) => tag.name)
+                      : []
+                  }
+                  assignees={tarea.assignees || []}
+                  comentarios={0}
+                  prioridad={tarea.priority}
+                  boardId={boardId}
+                  listId={list.id.toString()}
+                  card={{
+                    id: tarea.id,
+                    title: tarea.title,
+                    description: tarea.description,
+                    endDate: tarea.end_date
+                  }}
+                  isBoardOwner={isBoardOwner}
+                  isBoardMember={isBoardMember} 
+                  getBoardLists={getBoardLists}
+                />
               ))}
-
-              {/* Botón agregar tarea */}
             </div>
-            <button className="mt-2 py-2 px-3 w-full bg-purple-600 text-white rounded-md hover:bg-purple-700">
+            <button
+              onClick={() => goToAddTask(list.id)}
+              className="mt-2 py-2 px-3 w-full bg-purple-600 text-white rounded-md hover:bg-purple-700"
+            >
               + Agregar tarea
             </button>
           </div>
-        ))}
-      {/* Botón agregar lista */}
-      <div className="relative">
-        <AddListModal boardId={boardId} getBoardLists={getBoardLists} />
-      </div>
-
-      {/* Mensaje si no hay listas */}
-      {(!Array.isArray(boardLists) || boardLists.length === 0) && (
+        ))
+      ) : (
         <p className="text-white mt-2">
           No hay listas creadas en este tablero.
         </p>
       )}
+
+      {/* Botón agregar lista */}
+      <div className="relative">
+        <AddListModal boardId={boardId} getBoardLists={getBoardLists} />
+      </div>
     </div>
   );
 };

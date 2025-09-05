@@ -1,7 +1,7 @@
 import DashboardSidebar from "components/home/DashboardSidebar";
 import UserNavbarEditView from "components/ui/UserNavbarEditView";
 import CloseButton from "components/ui/CloseButton";
-import Form from "components/edit/form";
+import Form from "components/Edit/form/index";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -58,7 +58,7 @@ export default function EditBoardView({ boardId }: Props) {
         {/* Header con título y botón de cierre */}
         <div className="flex w-full items-center justify-between px-6 mb-8">
           <h1 className="text-white text-xl font-medium">Edición de tablero</h1>
-          <CloseButton redirectTo="/home" />
+          <CloseButton  />
         </div>
 
         {/* Contenido central */}

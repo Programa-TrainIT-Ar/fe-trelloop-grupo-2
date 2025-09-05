@@ -3,14 +3,20 @@ import { useRouter } from "next/navigation";
 import React from "react";
 
 interface BackHeaderProps {
-  title: string;
+  title?: string;
+  /** Ruta destino al presionar la flecha. Por defecto "/" */
+  href?: string;
+  /** Si se provee, se ejecuta en lugar de navegar (útil para mostrar modal). */
+  onBack?: () => void;
 }
 
-export default function BackHeader({title}: BackHeaderProps) {
+export default function BackHeader({ title = "", href = "/", onBack }: BackHeaderProps) {
   const router = useRouter();
 
   const handleBack = () => {
-    router.back();
+    if (onBack) return onBack();   // deja que el padre decida (modal, etc.)
+    if (href) return router.push(href); // ir siempre a la ruta indicada
+    router.back();                 // fallback por compatibilidad
   };
 
   return (

@@ -228,6 +228,7 @@ const UserBoards = () => {
   const [boards, setBoards] = useState<Board[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [initialBoardOrder, setInitialBoardOrder] = useState<string[]>([]);
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState<Set<string>>(new Set());
 
   const [previewVisible, setPreviewVisible] = useState<{ id: string; section: 'favorite' | 'created' } | null>(null);
 
@@ -244,72 +245,88 @@ const UserBoards = () => {
     let intervalId: NodeJS.Timeout;
 
     async function fetchBoards() {
-      const userBoards = await getUserBoards();
+      try {
+        const userBoards = await getUserBoards();
 
-      const loadedBoards: Board[] = userBoards.map((b: any, index: number) => ({
-        id: b.id.toString(),
-        name: b.name,
-        title: b.name,
-        description: b.description || "",
-        board_image_url: b.boardImageUrl || "",
-        coverImage: b.boardImageUrl || assignedImages[index] || "/assets/images/default-board.jpg",
-        isFavorite: b.is_favorite ?? favoriteIds.has(b.id.toString()),
-        members: Array.isArray(b.members)
-          ? b.members.filter((m: any, i: number, self: any[]) =>
-            self.findIndex((x) => (typeof x === "object" ? x.id : x) === (typeof m === "object" ? m.id : m)) === i
-          ).map((m: any, i: number) => {
-            const id = typeof m === "object" ? m.id : m;
-            // Aplicando la misma lógica que en Members.tsx
-            if (typeof m === "object" && m.name && m.last_name) {
+        const loadedBoards: Board[] = userBoards.map((b: any, index: number) => ({
+          id: b.id.toString(),
+          name: b.name,
+          title: b.name,
+          description: b.description || "",
+          board_image_url: b.boardImageUrl || "",
+          coverImage: b.boardImageUrl || assignedImages[index] || "/assets/images/default-board.jpg",
+          isFavorite: b.is_favorite ?? favoriteIds.has(b.id.toString()),
+          members: Array.isArray(b.members)
+            ? b.members.filter((m: any, i: number, self: any[]) =>
+              self.findIndex((x) => (typeof x === "object" ? x.id : x) === (typeof m === "object" ? m.id : m)) === i
+            ).map((m: any, i: number) => {
+              const id = typeof m === "object" ? m.id : m;
+              // Aplicando la misma lógica que en Members.tsx
+              if (typeof m === "object" && m.name && m.last_name) {
+                return {
+                  id: id.toString(),
+                  name: `${m.name} ${m.last_name}`.trim(),
+                  username: m.email?.split("@")[0] || `usuario${i + 1}`,
+                  email: m.email,
+                  avatar: m.avatar_url || `/assets/icons/avatar${(i % 4) + 1}.png`,
+                };
+              }
               return {
                 id: id.toString(),
-                name: `${m.name} ${m.last_name}`.trim(),
-                username: m.email?.split("@")[0] || `usuario${i + 1}`,
-                email: m.email,
-                avatar: m.avatar_url || `/assets/icons/avatar${(i % 4) + 1}.png`,
+                name: `Miembro ${i + 1}`,
+                username: `usuario${i + 1}`,
+                avatar: `/assets/icons/avatar${(i % 4) + 1}.png`,
               };
-            }
-            return {
-              id: id.toString(),
-              name: `Miembro ${i + 1}`,
-              username: `usuario${i + 1}`,
-              avatar: `/assets/icons/avatar${(i % 4) + 1}.png`,
-            };
-          })
-          : [],
-        tags: b.tags || [],
-      }));
+            })
+            : [],
+          tags: b.tags || [],
+        }));
 
-      setBoards(loadedBoards);
+        setBoards(loadedBoards);
 
-      if (userBoards.length > 0) {
-        const newIds = userBoards.map((b: any) => b.id.toString());
-        setInitialBoardOrder((prev) => {
-          const updatedOrder = [...prev];
-          for (const id of newIds) {
-            if (!updatedOrder.includes(id)) {
-              updatedOrder.push(id);
+        if (userBoards.length > 0) {
+          const newIds = userBoards.map((b: any) => b.id.toString());
+          setInitialBoardOrder((prev) => {
+            const updatedOrder = [...prev];
+            for (const id of newIds) {
+              if (!updatedOrder.includes(id)) {
+                updatedOrder.push(id);
+              }
             }
+            return updatedOrder;
+          });
+        }
+
+        const favoriteSet = new Set(
+          userBoards.filter((b: any) => b.is_favorite).map((b: any) => b.id.toString())
+        );
+
+        setFavoriteIds((prevFavorites) => {
+          const hasLocalChanges = Array.from(isUpdatingFavorite).length > 0;
+          if (hasLocalChanges) {
+            return prevFavorites;
           }
-          return updatedOrder;
+          return new Set<string>(favoriteSet as Set<string>);
         });
-      }
 
-      const favoriteSet = new Set(
-        userBoards.filter((b: any) => b.is_favorite).map((b: any) => b.id.toString())
-      );
-      setFavoriteIds(favoriteSet as Set<string>);
+      } catch (error) {
+        console.error("Error al cargar tableros:", error);
+      }
     }
 
     fetchBoards();
     intervalId = setInterval(() => {
-      fetchBoards();
-    }, 3000);
+      if (isUpdatingFavorite.size === 0) {
+        fetchBoards();
+      }
+    }, 5000);
 
     return () => clearInterval(intervalId);
-  }, [Array.from(favoriteIds).sort().join(",")]);
+  }, [isUpdatingFavorite.size]);
 
   const toggleFavorite = async (boardId: string) => {
+    setIsUpdatingFavorite(prev => new Set([...prev, boardId]));
+
     const updated = new Set(favoriteIds);
     if (updated.has(boardId)) {
       updated.delete(boardId);
@@ -318,10 +335,31 @@ const UserBoards = () => {
     }
     setFavoriteIds(updated);
 
+    setBoards(prevBoards => prevBoards.map(board =>
+      board.id === boardId
+        ? { ...board, isFavorite: !board.isFavorite }
+        : board
+    ));
+
     try {
       await toggleFavoriteBoard(boardId);
     } catch (error) {
       console.error("Error al cambiar favorito:", error);
+      // Revertir el cambio en caso de error
+      setFavoriteIds(favoriteIds);
+      setBoards(prevBoards => prevBoards.map(board =>
+        board.id === boardId
+          ? { ...board, isFavorite: !board.isFavorite }
+          : board
+      ));
+    } finally {
+      setTimeout(() => {
+        setIsUpdatingFavorite(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(boardId);
+          return newSet;
+        });
+      }, 1000);
     }
   };
 

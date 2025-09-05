@@ -43,7 +43,7 @@ export default function BoardInfo({
           <div className="cursor-pointer group" onClick={handleImageClick}>
             <div className="w-[130px] h-[130px] rounded-2xl overflow-hidden border border-[#404040] hover:border-[#6A5FFF] transition-all duration-300 relative">
               <Image
-                src={resolvedImageUrl}
+                src={DEFAULT_IMAGE_URL}
                 alt="Imagen del tablero"
                 width={130}
                 height={130}

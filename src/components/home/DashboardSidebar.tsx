@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function DashboardSidebar() {
   return (
     <aside
-      className="w-[210px] h-[1210px] bg-[rgba(0,0,0,0.07)] border-r border-[#2B2B2B] flex flex-col items-start px-4 py-4 gap-6"
+      className="w-[210px] h-full bg-[rgba(0,0,0,0.07)] border-r border-[#2B2B2B] flex flex-col items-start px-4 py-4 gap-6"
     >
       {/* Logo + TrainIT */}
       <div className="flex items-center gap-2 mt-2">

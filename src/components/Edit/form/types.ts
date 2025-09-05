@@ -33,9 +33,9 @@ export interface MembersProps {
 }
 
 export interface TagsProps {
-  tags: Tag[];
-  onAdd: (newTag: Tag) => void;
-  onDelete: (tagToRemove: Tag) => void;
+  tags: any[];
+  onAdd: (newTag: string) => void;
+  onDelete: (tagIdToRemove: number) => void;
 }
 
 export interface VisibilityProps {
@@ -53,6 +53,7 @@ export interface User {
   name: string;
   username: string;
   img: string;
+  email: string;
 }
 
 export interface MemberSearchResultProps {

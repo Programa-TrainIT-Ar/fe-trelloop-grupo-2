@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${poppins.variable} ${ppValveExtraLightItalic.variable}`}
+      className={`${poppins.variable} ${ppValveExtraLightItalic.variable} `}
     >
       <body>
         {children} {/*Grilla*/}

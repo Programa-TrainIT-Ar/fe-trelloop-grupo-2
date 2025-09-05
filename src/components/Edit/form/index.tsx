@@ -8,6 +8,7 @@ import Visibility from './view/Visibility';
 import Actions from './view/Actions';
 import { getToken } from '../../../store/authStore';
 import { useRouter } from 'next/navigation';
+import { useCardTags } from 'hooks/useCardTags';
 
 type Props = {
   boardId: string;
@@ -18,7 +19,7 @@ const Form = ({ boardId }: Props) => {
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState<string | File>('');
   const [members, setMembers] = useState<any[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
+  const [formTags, setFormTags] = useState<{id: number, name: string}[]>([]);
   const [visibility, setVisibility] = useState<'PRIVATE' | 'PUBLIC'>('PRIVATE');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,8 +60,7 @@ const Form = ({ boardId }: Props) => {
             img: user.avatar_url,
           }))
         );
-
-        setTags(data.tags || []);
+        setFormTags(data.tags);
         setVisibility(data.status === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE');
       } catch (err: any) {
         setError(err.message || 'Error desconocido.');
@@ -71,14 +71,12 @@ const Form = ({ boardId }: Props) => {
 
     fetchBoard();
   }, [boardId]);
+  const { tags, handleDeleteTag, handleAddTag } = useCardTags(formTags, setFormTags);
 
   const handleDeleteMember = (id: string) => {
     setMembers((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const handleDeleteTag = (tagToRemove: string) => {
-    setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
-  };
 
   const handleAddMember = (user: any) => {
     setMembers((prev) => {
@@ -120,7 +118,7 @@ const Form = ({ boardId }: Props) => {
     });
 
     tags.forEach((tag) => {
-      formData.append("tags", tag);
+      formData.append("tags", tag.name);
     });
 
     try {
@@ -180,7 +178,7 @@ const Form = ({ boardId }: Props) => {
       <section>
         <Tags
           tags={tags}
-          onAdd={(newTag) => setTags((prev) => [...prev, newTag])}
+          onAdd={handleAddTag}
           onDelete={handleDeleteTag}
         />
       </section>

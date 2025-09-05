@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import EditBoardView from "../../../components/edit/EditBoardView";
+import EditBoardView from "../../../components/Edit/EditBoardView";
 
 export default function EditBoardPage() {
   const params = useParams();

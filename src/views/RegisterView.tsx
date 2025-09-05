@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SuccessModal from "../components/SuccessModal";
@@ -10,6 +10,7 @@ import { ValidationError } from "../types/validatesError";
 import { RegisterData} from "types/user";
 import { registerUserController } from "controllers/authController";
 import BackHeader from "components/BackHeader";
+import Navbar from "components/Navbar/Navbar";
 
 interface FormErrors {
   firstName?: string;
@@ -36,6 +37,13 @@ export default function RegisterView() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Confirmación al salir si el formulario tiene datos
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const isDirty = useMemo(() => {
+    const { firstName, lastName, email, password, confirmPassword } = formData;
+    return Boolean(firstName || lastName || email || password || confirmPassword);
+  }, [formData]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setFormErrors((prevErrors) => ({
@@ -47,18 +55,10 @@ export default function RegisterView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setFormErrors({});
 
     const { firstName, lastName, email, password, confirmPassword } = formData;
-
-    const data: RegisterData = {
-      firstName,
-      lastName,
-      email,
-      password,
-      confirmPassword,
-    };
+    const data: RegisterData = { firstName, lastName, email, password, confirmPassword };
 
     try {
       await registerUserController(data);
@@ -66,17 +66,11 @@ export default function RegisterView() {
     } catch (err) {
       if (err instanceof ValidationError) {
         if (err.field) {
-          // Si el error tiene un campo específico, actualiza solo ese
-          setFormErrors((prevErrors) => ({
-            ...prevErrors,
-            [err.field!]: err.message,
-          }));
+          setFormErrors((prevErrors) => ({ ...prevErrors, [err.field!]: err.message }));
         } else {
-          // Si no tiene un campo específico (ej. 'general'), es un error general
           setFormErrors({ general: err.message });
         }
       } else if (err instanceof Error) {
-        // Para otros errores que no son ValidationError
         setFormErrors({ general: "Error inesperado: " + err.message });
       } else {
         setFormErrors({ general: "Error desconocido al registrar usuario." });
@@ -89,12 +83,30 @@ export default function RegisterView() {
     router.push("/login");
   };
 
+  // Flecha atrás (BackHeader)
+  const handleBackRequest = () => {
+    if (isDirty) setShowLeaveConfirm(true);
+    else router.push("/");
+  };
+  const confirmLeave = () => {
+    setShowLeaveConfirm(false);
+    router.push("/");
+  };
+  const cancelLeave = () => setShowLeaveConfirm(false);
+
   return (
     <div className="w-full bg-dual-circles text-text-default h-screen relative flex flex-col">
-      <div className="absolute inset-0 z-0">
+      {/* NAVBAR del home: full width y arriba de todo; ocultar REGISTRARSE aquí */}
+      <Navbar hideRegister />
+
+      {/* Fondo decorativo debajo y sin capturar clics */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
         <Background />
       </div>
-      <BackHeader title="Registro de usuario" />
+
+      {/* Header con flecha (usa onBack para chequear si hay datos) */}
+      <BackHeader title="Registro de usuario" onBack={handleBackRequest} />
+
       <div className="flex-grow px-8 relative flex flex-col lg:flex-row justify-center">
         <div className="w-full lg:w-1/2 flex justify-end items-center p-8 order-last lg:order-first">
           <IlustracionUsuario
@@ -120,15 +132,11 @@ export default function RegisterView() {
                     minLength={3}
                     value={formData.firstName}
                     onChange={handleChange}
-                    className={`form-input-default  ${
-                      formErrors.firstName ? "" : "mb-4"
-                    }`} 
+                    className={`form-input-default  ${formErrors.firstName ? "" : "mb-4"}`} 
                     required
                   />
                   {formErrors.firstName && (
-                    <p className="text-red-500 text-sm mt-1 mb-2">
-                      {formErrors.firstName}
-                    </p>
+                    <p className="text-red-500 text-sm mt-1 mb-2">{formErrors.firstName}</p>
                   )}
                 </div>
                 <div className="flex flex-col w-full">
@@ -143,18 +151,15 @@ export default function RegisterView() {
                     placeholder="Escribe tus apellidos"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className={`form-input-default ${
-                      formErrors.lastName ? "" : "mb-4"
-                    }`}
+                    className={`form-input-default ${formErrors.lastName ? "" : "mb-4"}`}
                     required
                   />
                   {formErrors.lastName && (
-                    <p className="text-red-500 text-sm mt-1 mb-2">
-                      {formErrors.lastName}
-                    </p>
+                    <p className="text-red-500 text-sm mt-1 mb-2">{formErrors.lastName}</p>
                   )}
                 </div>
               </div>
+
               <div className="flex flex-col w-full">
                 <label htmlFor="email" className="mb-2">
                   Correo electrónico <span className="text-primary-500">*</span>
@@ -166,19 +171,16 @@ export default function RegisterView() {
                   placeholder="Escribe tu correo electrónico"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`form-input-default ${
-                    formErrors.email ? "" : "mb-4"
-                  }`}
+                  className={`form-input-default ${formErrors.email ? "" : "mb-4"}`}
                   required
                 />
                 {formErrors.email && (
-                  <p className="text-red-500 text-sm mt-1 mb-2">
-                    {formErrors.email}
-                  </p>
+                  <p className="text-red-500 text-sm mt-1 mb-2">{formErrors.email}</p>
                 )}
               </div>
+
               <div className="flex space-x-2">
-                <div className="relative flex flex-col w-full">
+                <div className="relative flex flex-col w/full w-full">
                   <label htmlFor="password" className="mb-2">
                     Contraseña <span className="text-primary-500">*</span>
                   </label>
@@ -196,24 +198,22 @@ export default function RegisterView() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-11  right-0 pr-3 text-[#797676]"
+                    className="absolute top-11 right-0 pr-3 text-[#797676]"
                   >
                     {showPassword ? (
                       <EyeSlashIcon className="h-5 w-5" />
                     ) : (
-                      <EyeIcon className="h-5 w-5 " />
+                      <EyeIcon className="h-5 w-5" />
                     )}
                   </button>
                   {formErrors.password && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.password}
-                    </p>
+                    <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
                   )}
                 </div>
-                <div className="relative flex flex-col w-full">
+
+                <div className="relative flex flex-col w/full w-full">
                   <label htmlFor="confirmPassword" className="mb-2">
-                    Confirmar contraseña{" "}
-                    <span className="text-primary-500">*</span>
+                    Confirmar contraseña <span className="text-primary-500">*</span>
                   </label>
                   <input
                     type={showConfirmPassword ? "text" : "password"}
@@ -229,7 +229,7 @@ export default function RegisterView() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute top-11  right-0 pr-3 text-[#797676]"
+                    className="absolute top-11 right-0 pr-3 text-[#797676]"
                   >
                     {showConfirmPassword ? (
                       <EyeSlashIcon className="h-5 w-5" />
@@ -238,26 +238,23 @@ export default function RegisterView() {
                     )}
                   </button>
                   {formErrors.confirmPassword && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.confirmPassword}
-                    </p>
+                    <p className="text-red-500 text-sm mt-1">{formErrors.confirmPassword}</p>
                   )}
                 </div>
               </div>
 
               {formErrors.general && (
-                <p className="text-red-500 text-sm mt-1">
-                  {formErrors.general}
-                </p>
+                <p className="text-red-500 text-sm mt-1">{formErrors.general}</p>
               )}
 
               <button
                 type="submit"
-                className="uppercase w-full h-[40px] my-6 bg-primary-500 text-white py-2  rounded-[8px]"
+                className="uppercase w-full h-[40px] my-6 bg-primary-500 text-white py-2 rounded-[8px]"
               >
                 Registrarme
               </button>
             </form>
+
             <div className="w-full px-[20%] text-center justify-center">
               <p>
                 Al registrarme, acepto las{" "}
@@ -272,10 +269,7 @@ export default function RegisterView() {
               </p>
               <p className="text-sm text-center mt-[6%]">
                 ¿Ya tienes cuenta?{" "}
-                <Link
-                  href="/login"
-                  className="text-secondary-500 hover:underline"
-                >
+                <Link href="/login" className="text-secondary-500 hover:underline">
                   Inicia sesión
                 </Link>
               </p>
@@ -283,7 +277,35 @@ export default function RegisterView() {
           </div>
         </div>
       </div>
+
+      {/* Modal de éxito (tu existente) */}
       <SuccessModal isOpen={isModalOpen} onClose={handleCloseModal} />
+
+      {/* Modal de confirmación para salir si hay datos */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="w-[460px] h-[274px] bg-[#222222] rounded-[16px] flex flex-col items-center px-6 py-4 relative">
+            <img src="/assets/icons/alert.png" alt="Alerta" className="w-[72px] h-[72px] mt-2" />
+            <p className="text-white text-center font-poppins text-[14px] font-normal leading-[180%] mt-6">
+              Está a punto de cancelar el registro. ¿Está seguro de cancelar la operación?
+            </p>
+            <div className="flex justify-between mt-auto mb-4 gap-4">
+              <button
+                onClick={cancelLeave}
+                className="w-[180px] h-[32px] border border-[#6A5FFF] rounded-[8px] text-white text-[14px] font-normal leading-[117%] hover:opacity-90"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmLeave}
+                className="w-[180px] h-[32px] bg-[#FB7A7A] rounded-[8px] text-white text-[14px] font-medium leading-[117%] hover:opacity-90"
+              >
+                Sí, salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
