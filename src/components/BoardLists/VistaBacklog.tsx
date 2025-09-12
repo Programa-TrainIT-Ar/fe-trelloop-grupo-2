@@ -1,4 +1,10 @@
-import React, { useState } from "react";
+// src/components/BoardList/VistaBacklog.tsx
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import ShareBoardModal from "./ShareBoardModal";
+import { getBoardDetails } from "../../services/boardService";
 
 interface BacklogItem {
   id: number;
@@ -11,62 +17,33 @@ interface BacklogItem {
 }
 
 const VistaBacklog: React.FC = () => {
+  const params = useParams() as { id?: string; boardId?: string };
+  const boardId = params?.id || params?.boardId || ""; // /boardList/[id]
+
   const [backlog, setBacklog] = useState<BacklogItem[]>([
-    {
-      id: 1,
-      descripcion: "Implementar login",
-      responsables: "Iván Andrade",
-      prioridad: "Media",
-      estado: "Hecho",
-      miembros: 7,
-      fecha: "Julio 15 de 2025",
-    },
-    {
-      id: 2,
-      descripcion: "Diseño dashboard",
-      responsables: "Iván Andrade",
-      prioridad: "Alta",
-      estado: "En progreso",
-      miembros: 7,
-      fecha: "Julio 15 de 2025",
-    },
-    {
-      id: 3,
-      descripcion: "Implementar diseño",
-      responsables: "Iván Andrade",
-      prioridad: "Baja",
-      estado: "Por hacer",
-      miembros: 7,
-      fecha: "Julio 15 de 2025",
-    },
+    { id: 1, descripcion: "Implementar login", responsables: "Iván Andrade", prioridad: "Media", estado: "Hecho", miembros: 7, fecha: "Julio 15 de 2025" },
+    { id: 2, descripcion: "Diseño dashboard", responsables: "Iván Andrade", prioridad: "Alta", estado: "En progreso", miembros: 7, fecha: "Julio 15 de 2025" },
+    { id: 3, descripcion: "Implementar diseño", responsables: "Iván Andrade", prioridad: "Baja", estado: "Por hacer", miembros: 7, fecha: "Julio 15 de 2025" },
   ]);
 
-  const getPrioridadColor = (prioridad: string) => {
-    switch (prioridad) {
-      case "Alta":
-        return "bg-red-500";
-      case "Media":
-        return "bg-orange-500";
-      case "Baja":
-        return "bg-gray-400";
-      default:
-        return "bg-gray-500";
-    }
-  };
+  const [openShare, setOpenShare] = useState(false);
+  const [canManage, setCanManage] = useState(false); // owner/admin
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case "Hecho":
-        return "bg-green-500";
-      case "En progreso":
-        return "bg-blue-500";
-      case "Por hacer":
-        return "bg-gray-600";
-      default:
-        return "bg-gray-500";
-    }
-  };
+  useEffect(() => {
+    if (!boardId) return;
+    (async () => {
+      try {
+        const b = await getBoardDetails(boardId);
+        const role = (b?.current_user_role || null) as "owner" | "admin" | "member" | null;
+        setCanManage(role === "owner" || role === "admin");
+      } catch (e) {
+        console.error(e);
+        setCanManage(false);
+      }
+    })();
+  }, [boardId]);
 
+  // (Se mantiene tu helper de agregar item, ya no lo invoca el +)
   const agregarNuevoItem = () => {
     const nuevoItem: BacklogItem = {
       id: backlog.length + 1,
@@ -75,25 +52,35 @@ const VistaBacklog: React.FC = () => {
       prioridad: "Media",
       estado: "Por hacer",
       miembros: 1,
-      fecha: new Date().toLocaleDateString('es-ES', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      }),
+      fecha: new Date().toLocaleDateString("es-ES", { month: "long", day: "numeric", year: "numeric" }),
     };
     setBacklog([...backlog, nuevoItem]);
   };
 
+  const getPrioridadColor = (prioridad: string) => {
+    switch (prioridad) {
+      case "Alta": return "bg-red-500";
+      case "Media": return "bg-orange-500";
+      case "Baja": return "bg-gray-400";
+      default: return "bg-gray-500";
+    }
+  };
+
+  const getEstadoColor = (estado: string) => {
+    switch (estado) {
+      case "Hecho": return "bg-green-500";
+      case "En progreso": return "bg-blue-500";
+      case "Por hacer": return "bg-gray-600";
+      default: return "bg-gray-500";
+    }
+  };
+
   return (
     <div className="p-6 bg-[#1a1a1a] min-h-screen w-full text-white">
-
-      {/* Tabla de backlog */}
+      {/* Tabla backlog (igual que antes) */}
       <div className="bg-[#2b2b2b] rounded-lg">
-        {/* Headers de columnas */}
         <div className="grid grid-cols-8 gap-4 p-4 bg-gray-800 rounded-t-lg">
-          <div className="flex items-center">
-            <input type="checkbox" className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded" />
-          </div>
+          <div className="flex items-center"><input type="checkbox" className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded" /></div>
           <div className="text-white font-medium">Descripción</div>
           <div className="text-white font-medium">Responsables</div>
           <div className="text-white font-medium">Prioridad</div>
@@ -103,46 +90,21 @@ const VistaBacklog: React.FC = () => {
           <div className="text-white font-medium">Acciones</div>
         </div>
 
-               {/* Filas de datos - cada una como un contenedor grid separado */}
-               <div className="p-4">
+        <div className="p-4">
           {backlog.map((item, index) => (
-            <div 
-              key={item.id} 
-              className={`bg-[#2b2b2b] rounded-lg hover:bg-gray-700 transition-colors ${
-                index < backlog.length - 1 ? 'mb-3' : ''
-              }`}
-            >
+            <div key={item.id} className={`bg-[#2b2b2b] rounded-lg hover:bg-gray-700 transition-colors ${index < backlog.length - 1 ? "mb-3" : ""}`}>
               <div className="grid grid-cols-8 gap-4 p-4">
-                <div className="flex items-center">
-                  <input type="checkbox" className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded" />
-                </div>
-                
+                <div className="flex items-center"><input type="checkbox" className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded" /></div>
                 <div className="text-white">{item.descripcion}</div>
-                
                 <div className="text-white">{item.responsables}</div>
-                
-                <div>
-                  <span className={`${getPrioridadColor(item.prioridad)} text-white text-xs px-2 py-1 rounded-md`}>
-                    {item.prioridad}
-                  </span>
-                </div>
-                
-                <div>
-                  <span className={`${getEstadoColor(item.estado)} text-white text-xs px-2 py-1 rounded-md`}>
-                    {item.estado}
-                  </span>
-                </div>
-                
+                <div><span className={`${getPrioridadColor(item.prioridad)} text-white text-xs px-2 py-1 rounded-md`}>{item.prioridad}</span></div>
+                <div><span className={`${getEstadoColor(item.estado)} text-white text-xs px-2 py-1 rounded-md`}>{item.estado}</span></div>
                 <div className="flex items-center space-x-1">
                   <div className="w-6 h-6 bg-gray-300 rounded-full"></div>
                   <div className="w-6 h-6 bg-gray-400 rounded-full"></div>
-                  <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center text-xs text-white">
-                    {item.miembros}
-                  </div>
+                  <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center text-xs text-white">{item.miembros}</div>
                 </div>
-                
                 <div className="text-white text-sm">{item.fecha}</div>
-                
                 <div className="flex items-center space-x-2">
                   <button className="text-white hover:text-gray-300">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,16 +121,26 @@ const VistaBacklog: React.FC = () => {
             </div>
           ))}
         </div>
-        </div>
+      </div>
 
+      {/* Botón flotante: SOLO owner/admin, abre modal de compartir */}
+      {canManage && (
+        <button
+          onClick={() => setOpenShare(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-[#6A5FFF] text-white rounded-full flex items-center justify-center text-2xl hover:bg-purple-700 transition-colors shadow-lg"
+          aria-label="Compartir tablero"
+          title="Compartir tablero"
+        >
+          +
+        </button>
+      )}
 
-      {/* Botón flotante para agregar */}
-      <button
-        onClick={agregarNuevoItem}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-[#6A5FFF] text-white rounded-full flex items-center justify-center text-2xl hover:bg-purple-700 transition-colors shadow-lg"
-      >
-        +
-      </button>
+      {/* Modal compartir */}
+      <ShareBoardModal
+        isOpen={openShare}
+        onClose={() => setOpenShare(false)}
+        boardId={String(boardId)}
+      />
     </div>
   );
 };

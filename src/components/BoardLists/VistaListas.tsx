@@ -110,7 +110,8 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean; isBoardMe
                   card={{
                     id: tarea.id,
                     title: tarea.title,
-                    description: tarea.description
+                    description: tarea.description,
+                    endDate: tarea.end_date
                   }}
                   isBoardOwner={isBoardOwner}
                   isBoardMember={isBoardMember} 

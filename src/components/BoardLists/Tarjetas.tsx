@@ -1,6 +1,7 @@
 import { useRouter } from "next/navigation";
 import React, { useState, useRef, useEffect } from "react";
 import DeleteCardButton from "./DeleteCardButton";
+import { formatToDDMMYYYY, truncateDate } from "utils/dates";
 
 interface Assignee {
   avatar_url: string;
@@ -18,7 +19,12 @@ interface TarjetaProps {
   //props para delete
   boardId: string;
   listId: string;
-  card: { id: number; title: string; description?: string };
+  card: {
+    id: number;
+    title: string;
+    description?: string;
+    endDate?: string | null;
+  };
   isBoardOwner?: boolean;
   isBoardMember?: boolean;
   getBoardLists: () => Promise<void>;
@@ -43,6 +49,19 @@ const Tarjeta: React.FC<TarjetaProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+
+  
+
+  const endDate = card.endDate ? truncateDate(new Date(`${card.endDate}T00:00:00`)) : null;
+
+  const ahoraArgentina = new Date(
+    new Date().toLocaleString("en-US", {
+      timeZone: "America/Argentina/Buenos_Aires",
+    })
+  );
+  const hoyArgentina = truncateDate(ahoraArgentina);
+
+  const isOverdue = endDate ? endDate < hoyArgentina : false;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -107,7 +126,7 @@ const Tarjeta: React.FC<TarjetaProps> = ({
       setShowDeleteModal(false);
       await getBoardLists();
     } catch (err: any) {
-      console.error('Error al eliminar tarjeta:', err);
+      console.error("Error al eliminar tarjeta:", err);
       alert(err?.message || "Error al eliminar la tarjeta");
     } finally {
       setIsDeleting(false);
@@ -158,30 +177,62 @@ const Tarjeta: React.FC<TarjetaProps> = ({
 
         {/* Fila inferior: avatars + comentarios */}
         <div className="flex justify-between items-center text-gray-400 text-sm">
-          <div className="flex -space-x-2">
-            {assignees.length <= 2 ? (
-              assignees.map((user, idx) => (
-                <img
-                  key={idx}
-                  src={user.avatar_url}
-                  alt={user.name}
-                  className="w-6 h-6 rounded-full border-[0.5px] border-black"
-                />
-              ))
-            ) : (
-              <>
-                {assignees.slice(0, 2).map((user, idx) => (
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {assignees.length <= 2 ? (
+                assignees.map((user, idx) => (
                   <img
                     key={idx}
                     src={user.avatar_url}
                     alt={user.name}
                     className="w-6 h-6 rounded-full border-[0.5px] border-black"
                   />
-                ))}
-                <div className="w-6 h-6 flex items-center justify-center rounded-full border-[0.5px] border-gray-400 bg-[#3a3a3a] text-white text-xs leading-none font-medium">
-                  {assignees.length}
-                </div>
-              </>
+                ))
+              ) : (
+                <>
+                  {assignees.slice(0, 2).map((user, idx) => (
+                    <img
+                      key={idx}
+                      src={user.avatar_url}
+                      alt={user.name}
+                      className="w-6 h-6 rounded-full border-[0.5px] border-black"
+                    />
+                  ))}
+
+                  <div className="w-6 h-6 flex items-center justify-center rounded-full border-[0.5px] border-gray-400 bg-[#3a3a3a] text-white text-xs leading-none font-medium">
+                    {assignees.length}
+                  </div>
+                </>
+              )}
+            </div>
+            {/* bg-[#ffa5a5] */}
+            {isOverdue && endDate && (
+              <span className="text-black text-xs px-2 py-1 rounded-xl bg-[#FFAEA6] flex items-center gap-1">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-calendar-days-icon lucide-calendar-days"
+                >
+                  <path d="M8 2v4" />
+                  <path d="M16 2v4" />
+                  <rect width="18" height="18" x="3" y="4" rx="2" />
+                  <path d="M3 10h18" />
+                  <path d="M8 14h.01" />
+                  <path d="M12 14h.01" />
+                  <path d="M16 14h.01" />
+                  <path d="M8 18h.01" />
+                  <path d="M12 18h.01" />
+                  <path d="M16 18h.01" />
+                </svg>
+                {formatToDDMMYYYY(endDate)}
+              </span>
             )}
           </div>
           <div className="flex items-center gap-1">
@@ -202,7 +253,9 @@ const Tarjeta: React.FC<TarjetaProps> = ({
           >
             <button className="flex items-center gap-2 w-full h-[37px] px-4 rounded-md hover:bg-[#3A3A3A]">
               <img src="/assets/icons/eyes.svg" alt="Ver" className="w-5 h-5" />
-              <span className="text-white text-sm font-medium">Ver tarjeta</span>
+              <span className="text-white text-sm font-medium">
+                Ver tarjeta
+              </span>
             </button>
             <button
               onClick={() => router.push(editURL ? editURL : "")}
@@ -241,7 +294,8 @@ const Tarjeta: React.FC<TarjetaProps> = ({
               className="w-[72px] h-[72px] mt-2"
             />
             <p className="text-white text-center font-poppins text-[14px] font-normal leading-[180%] mt-6">
-              ¿Estás seguro de que deseas eliminar esta tarjeta? Esta acción no será reversible.
+              ¿Estás seguro de que deseas eliminar esta tarjeta? Esta acción no
+              será reversible.
             </p>
             <div className="flex justify-between mt-auto mb-4 gap-4">
               <button

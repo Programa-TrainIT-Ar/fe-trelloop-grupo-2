@@ -5,6 +5,7 @@ import UserNavbar from "components/home/UserNavbar";
 import { useParams } from "next/navigation";
 import VistaListas from "components/BoardLists/VistaListas";
 import VistaBacklog from "components/BoardLists/VistaBacklog";
+import ShareBoardModal from "components/BoardLists/ShareBoardModal";
 import { useState, useEffect } from "react";
 
 interface BoardListProps {
@@ -14,6 +15,7 @@ interface BoardListProps {
 export default function BoardListPage() {
   const { boardId } = useParams<{ boardId: string }>();
   const [vistaActiva, setVistaActiva] = useState<string>("backlog");
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [boardPermissions, setBoardPermissions] = useState({
     isOwner: false,
     isMember: false,
@@ -101,6 +103,7 @@ export default function BoardListPage() {
               </div>
               <button
                 type="button"
+                onClick={() => setIsShareModalOpen(true)}
                 className="w-6 h-6 rounded-full border border-[#3a3a3a] bg-dark flex items-center justify-center text-gray-400 font-bold text-xl"
               >
                 <img src="/assets/icons/plus.svg" />
@@ -123,6 +126,12 @@ export default function BoardListPage() {
           ))}
         </section>
       </main>
+            {/* Modal de compartir tablero */}
+            <ShareBoardModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        boardId={boardId as string}
+      />
     </div>
   );
 }

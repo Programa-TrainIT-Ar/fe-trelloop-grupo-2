@@ -4,12 +4,13 @@ import DashboardSidebar from "components/home/DashboardSidebar";
 import UserNavbar from "components/home/UserNavbar";
 import CloseButton from "components/ui/CloseButton";
 import { useRouter, useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { getToken } from "store/authStore";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "styles/datepicker.css";
 import { es } from "date-fns/locale";
+import { isValid, parseISO, format, isAfter } from "date-fns";
 import ReminderSelect from "components/Edit/form/view/ReminderSelect";
 import Tags from "components/Edit/form/view/Tags";
 import Responsible from "components/EditCard/Responsible";
@@ -39,23 +40,15 @@ export default function AddTask() {
     const boardIdNum = Number(boardId);
 
 
-    const onChange = (dates: [Date | null, Date | null]) => {
+    const handleDateChange = (dates: [Date | null, Date | null]) => {
         const [start, end] = dates;
-        setStartDate(start);
-        setEndDate(end);
-    }
 
-    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const date = new Date(e.target.value);
-        if (!isNaN(date.getTime())) {
-            setStartDate(date);
-        }
-    };
-
-    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const date = new Date(e.target.value);
-        if (!isNaN(date.getTime())) {
-            setEndDate(date);
+        if (start && end && isAfter(start, end)) {
+            setError("La fecha de inicio no puede ser posterior a la fecha de fin");
+        } else {
+            setError(null);
+            setStartDate(start);
+            setEndDate(end);
         }
     };
 
@@ -160,7 +153,7 @@ export default function AddTask() {
                             <div className="font-poppins w-full rounded-lg ms-2 outline-none bg-[#2a2a2a] text-white border border-[#3a3a3a] p-5">
                                 <DatePicker
                                     selected={startDate}
-                                    onChange={onChange}
+                                    onChange={handleDateChange}
                                     startDate={startDate}
                                     endDate={endDate}
                                     locale={es}
@@ -169,16 +162,18 @@ export default function AddTask() {
                                 />
                                 <div className="flex items-center">
                                     <input
-                                        value={startDate ? startDate.toISOString().split('T')[0] : ''}
-                                        onChange={handleStartDateChange}
+                                        value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
+                                        onChange={(e) => handleDateChange([parseISO(e.target.value), endDate])}
                                         className="font-poppins w-full p-2 rounded-xl outline-none bg-[#2a2a2a] text-white border border-[#3a3a3a] focus:ring-2 focus:ring-[#6a5fff]"
                                         placeholder="Desde"
+                                        readOnly
                                     />
                                     <input
-                                        value={endDate ? endDate.toISOString().split('T')[0] : ''}
-                                        onChange={handleEndDateChange}
+                                        value={endDate ? format(endDate, 'yyyy-MM-dd') : ''}
+                                        onChange={(e) => handleDateChange([startDate, parseISO(e.target.value)])}
                                         className="font-poppins w-full p-2 rounded-xl ms-2 outline-none bg-[#2a2a2a] text-white border border-[#3a3a3a] focus:ring-2 focus:ring-[#6a5fff]"
                                         placeholder="Hasta"
+                                        readOnly
                                     />
                                 </div>
                                 {/* <ReminderSelect /> */}
