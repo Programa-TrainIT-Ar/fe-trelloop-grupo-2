@@ -101,5 +101,77 @@ export const toggleFavoriteBoard = async (boardId: string) => {
   } catch (error) {
     console.error("Error al actualizar favorito:", error);
   }
-};
+}; 
+
+const API = process.env.NEXT_PUBLIC_API_URL;
+
+function authHeadersJSON() {
+  const token = getToken?.();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+// Buscar usuarios por nombre/email
+export async function searchUsers(q: string) {
+  const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(q)}`, {
+    method: "GET",
+    headers: authHeadersJSON(),
+  });
+  if (!res.ok) throw new Error("Error buscando usuarios");
+  return res.json(); // [{id,name,last_name,email,avatar_url}]
+}
+
+// Detalle de tablero con roles y rol actual
+export async function getBoardDetails(boardId: string | number) {
+  const res = await fetch(`${API}/api/boards/${boardId}`, {
+    method: "GET",
+    headers: authHeadersJSON(),
+  });
+  if (!res.ok) throw new Error("No se pudo obtener el tablero");
+  return res.json();
+}
+
+// Agregar miembro (por email) con rol
+export async function addBoardMember(
+  boardId: string | number,
+  payload: { email: string; role: "member" | "admin" }
+) {
+  const res = await fetch(`${API}/api/boards/${boardId}/members`, {
+    method: "POST",
+    headers: authHeadersJSON(),
+    body: JSON.stringify(payload),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error || body?.message || "No se pudo agregar miembro");
+  return body;
+}
+
+// Actualizar rol de miembro
+export async function updateBoardMemberRole(
+  boardId: string | number,
+  memberUserId: string | number,
+  role: "member" | "admin" | "owner"
+) {
+  const res = await fetch(`${API}/api/boards/${boardId}/members/${memberUserId}/role`, {
+    method: "PUT",
+    headers: authHeadersJSON(),
+    body: JSON.stringify({ role }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error || body?.message || "No se pudo actualizar el rol");
+  return body;
+}
+
+// Eliminar miembro
+export async function removeBoardMember(boardId: string | number, memberUserId: string | number) {
+  const res = await fetch(`${API}/api/boards/${boardId}/members/${memberUserId}`, {
+    method: "DELETE",
+    headers: authHeadersJSON(),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error || body?.message || "No se pudo eliminar miembro");
+  return body;
+}
 

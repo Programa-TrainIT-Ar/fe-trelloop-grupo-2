@@ -51,8 +51,8 @@ export default function PgtListasEditar() {
     cardIdNum
   );
   const adaptSetFormTags = (setForm: any) => (tags: TagsType[]) => {
-  setForm((prev: any) => ({ ...prev, tags }));
-};
+    setForm((prev: any) => ({ ...prev, tags }));
+  };
   const { tags, handleAddTag, handleDeleteTag } = useCardTags(
     form.tags,
     adaptSetFormTags(setForm)
@@ -113,6 +113,7 @@ export default function PgtListasEditar() {
                         }
                         className="font-poppins w-full p-2 rounded-xl outline-none bg-[#2a2a2a] text-white border border-[#3a3a3a] focus:ring-2 focus:ring-[#6a5fff]"
                         placeholder="Desde"
+                        readOnly
                       />
                       <input
                         value={
@@ -125,6 +126,7 @@ export default function PgtListasEditar() {
                         }
                         className="font-poppins w-full p-2 rounded-xl ms-2 outline-none bg-[#2a2a2a] text-white border border-[#3a3a3a] focus:ring-2 focus:ring-[#6a5fff]"
                         placeholder="Hasta"
+                        readOnly
                       />
                     </div>
                     <label className="font-poppins block text-white text-sm mt-5 mb-2">

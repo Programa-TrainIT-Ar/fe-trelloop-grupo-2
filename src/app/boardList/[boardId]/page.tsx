@@ -5,7 +5,10 @@ import UserNavbar from "components/home/UserNavbar";
 import { useParams } from "next/navigation";
 import VistaListas from "components/BoardLists/VistaListas";
 import VistaBacklog from "components/BoardLists/VistaBacklog";
+import ShareBoardModal from "components/BoardLists/ShareBoardModal";
 import { useState, useEffect } from "react";
+// NEW: traemos los detalles del tablero para conocer el rol actual del usuario
+import { getBoardDetails } from "services/boardService"; // ajusta la ruta si tu alias difiere
 
 interface BoardListProps {
   params: { boardId: string };
@@ -14,42 +17,49 @@ interface BoardListProps {
 export default function BoardListPage() {
   const { boardId } = useParams<{ boardId: string }>();
   const [vistaActiva, setVistaActiva] = useState<string>("backlog");
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
   const [boardPermissions, setBoardPermissions] = useState({
     isOwner: false,
     isMember: false,
     loading: true,
   });
 
-  console.log('=== DEBUG BOARDLISTPAGE ===');
-  console.log('boardPermissions.isOwner:', boardPermissions.isOwner);
-  console.log('boardPermissions.isMember:', boardPermissions.isMember);
-  console.log('============================');
+  // NEW: canManage controla visibilidad del botón plus.svg (owner/admin)
+  const [canManage, setCanManage] = useState(false);
+
+  console.log("=== DEBUG BOARDLISTPAGE ===");
+  console.log("boardPermissions.isOwner:", boardPermissions.isOwner);
+  console.log("boardPermissions.isMember:", boardPermissions.isMember);
+  console.log("============================");
 
   useEffect(() => {
-    const fetchBoardPermissions = async () => {
-      if (!boardId) return;
+    if (!boardId) return;
 
+    (async () => {
       try {
-        setBoardPermissions({
-          isOwner: true, // Cambiar a true para testing
-          isMember: true, // Cambiar a true para testing
-          loading: false
-        });
-        // const response = await fetch(`/api/boards/${boardId}/permissions`);
-        // const data = await response.json();
+        // NEW: usamos el mismo enfoque que en VistaBacklog
+        const details = await getBoardDetails(String(boardId));
+        const role = (details?.current_user_role || null) as
+          | "owner"
+          | "admin"
+          | "member"
+          | null;
 
-        // setBoardPermissions({
-        //   isOwner: data.is_owner,
-        //   isMember: data.is_member,
-        //   loading: false,
-        // });
+        const can = role === "owner" || role === "admin";
+        setCanManage(can); // NEW
+
+        setBoardPermissions({
+          isOwner: can, // owner o admin pueden gestionar
+          isMember: role === "owner" || role === "admin" || role === "member",
+          loading: false,
+        });
       } catch (error) {
         console.error("Error fetching board permissions:", error);
         setBoardPermissions((prev) => ({ ...prev, loading: false }));
+        setCanManage(false); // NEW
       }
-    };
-
-    fetchBoardPermissions();
+    })();
   }, [boardId]);
 
   const handleVistaChange = (vista: string) => {
@@ -94,35 +104,50 @@ export default function BoardListPage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-gray-500">
-                <img src="/assets/icons/avatar1.png" />
+                <img src="/assets/icons/avatar1.png" alt="Avatar 1" />
               </div>
               <div className="w-6 h-6 rounded-full bg-gray-400">
-                <img src="/assets/icons/avatar2.png" />
+                <img src="/assets/icons/avatar2.png" alt="Avatar 2" />
               </div>
-              <button
-                type="button"
-                className="w-6 h-6 rounded-full border border-[#3a3a3a] bg-dark flex items-center justify-center text-gray-400 font-bold text-xl"
-              >
-                <img src="/assets/icons/plus.svg" />
-              </button>
+
+              {/* NEW: el plus.svg solo aparece para owner/admin */}
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="w-6 h-6 rounded-full border border-[#3a3a3a] bg-dark flex items-center justify-center text-gray-400 font-bold text-xl"
+                  aria-label="Compartir tablero"
+                  title="Compartir tablero"
+                >
+                  <img src="/assets/icons/plus.svg" alt="Agregar" />
+                </button>
+              )}
             </div>
           </div>
         </div>
+
         {/* Renderizado de componentes condicional */}
-        {/* {vistaActiva === "lists" && <VistaListas />} */}
         <section className="flex-1 min-h-0 overflow-hidden flex">
           {vistaActiva === "backlog" && <VistaBacklog />}
           {vistaActiva === "lists" &&
-            (boardId ? (<VistaListas 
-            boardId={boardId}
-            isBoardOwner={boardPermissions.isOwner}
-            isBoardMember={boardPermissions.isMember}
-            /> 
+            (boardId ? (
+              <VistaListas
+                boardId={boardId}
+                isBoardOwner={boardPermissions.isOwner}
+                isBoardMember={boardPermissions.isMember}
+              />
             ) : (
-            <p>Cargando...</p>
-          ))}
+              <p>Cargando...</p>
+            ))}
         </section>
       </main>
+
+      {/* Modal de compartir tablero (el backend reforzará permisos igualmente) */}
+      <ShareBoardModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        boardId={boardId as string}
+      />
     </div>
   );
 }
