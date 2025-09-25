@@ -56,3 +56,42 @@ export const updateListCardById = async (boardId: number, listId: number, cardId
 
   return responseData;
 };
+
+export async function getCardById(boardId: number, listId: number, cardId: number) {
+  const { getToken } = await import("store/authStore");
+  const token = getToken();
+  const API = process.env.NEXT_PUBLIC_API_URL;
+  if (!API) throw new Error("No se ha definido NEXT_PUBLIC_API_URL");
+
+  const res = await fetch(`${API}/api/boards/${boardId}/lists/${listId}/cards/${cardId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+  return res.json(); // { success: true, card: {...} }
+}
+
+export async function moveCardToList(
+  boardId: number,
+  currentListId: number,
+  cardId: number,
+  newListId: number
+) {
+  const { getToken } = await import("store/authStore");
+  const token = getToken();
+  const API = process.env.NEXT_PUBLIC_API_URL;
+  if (!API) throw new Error("No se ha definido NEXT_PUBLIC_API_URL");
+
+  const res = await fetch(`${API}/api/boards/${boardId}/lists/${currentListId}/cards/${cardId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ list_id: newListId }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({} as any));
+    throw new Error(body?.error || body?.message || "No se pudo mover la tarjeta");
+  }
+  return res.json();
+}

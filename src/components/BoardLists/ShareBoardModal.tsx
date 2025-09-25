@@ -1,13 +1,13 @@
 "use client";
 
+import DeleteMemberModal from "./DeleteMemberModal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { XMarkIcon, LinkIcon } from "@heroicons/react/24/outline";
 import {
   searchUsers,
   getBoardDetails,
   addBoardMember,
-  updateBoardMemberRole,
-  removeBoardMember,
+  updateBoardMemberRole
 } from "../../services/boardService";
 
 interface ShareBoardModalProps {
@@ -45,6 +45,9 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
   const [members, setMembers] = useState<BoardMember[]>([]);
   const [suggestions, setSuggestions] = useState<Array<{ id: string; name: string; email: string; avatar_url?: string }>>([]);
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; email: string } | null>(null);
+
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
 
   const [currentUserRole, setCurrentUserRole] = useState<ServerRole | null>(null);
   const canManage = useMemo(() => currentUserRole === "owner" || currentUserRole === "admin", [currentUserRole]);
@@ -104,12 +107,12 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
   // Compartir (agregar miembro)
   const handleShare = async () => {
     if (!selectedUser) return;
-      try {
-        await addBoardMember(boardId, {
-    email: selectedUser.email,
-    role: toMemberAdmin(selectedRole),
-  });
-  
+    try {
+      await addBoardMember(boardId, {
+        email: selectedUser.email,
+        role: toMemberAdmin(selectedRole),
+      });
+
       const data = await getBoardDetails(boardId);
       const ms: BoardMember[] = (data?.members || []).map((m: any) => ({
         id: String(m.id),
@@ -136,9 +139,12 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
     if (!member) return;
 
     try {
+      //Cambio para acceder a modal de confirmación en luagr de eliminación directa
       if (newUiRole === "Eliminar") {
         if (!canManage || member.roleServer === "owner") return;
-        await removeBoardMember(boardId, memberId);
+        // @ts-ignore
+        setMemberToDelete(member);
+        setOpenDeleteModal(true);
       } else {
         await updateBoardMemberRole(boardId, memberId, toMemberAdmin(newUiRole));
       }
@@ -218,11 +224,10 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
                 <button
                   onClick={handleShare}
                   disabled={!selectedUser || !canManage}
-                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                    !selectedUser || !canManage
+                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${!selectedUser || !canManage
                       ? "bg-[#3e3e3e] text-gray-300 cursor-not-allowed"
                       : "bg-[#6A5FFF] text-white hover:bg-[#5a4fef]"
-                  }`}
+                    }`}
                 >
                   + Compartir
                 </button>
@@ -287,6 +292,28 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
           </div>
         </div>
       </div>
+
+      <DeleteMemberModal
+        isOpen={openDeleteModal}
+        onClose={() => setOpenDeleteModal(false)}
+        member={memberToDelete}
+        boardId={boardId}
+        refreshMembers={async () => {
+          const data = await getBoardDetails(boardId);
+          // @ts-ignore
+          const ms = (data?.members || []).map((m) => ({
+            id: String(m.id),
+            name: `${m.name}${m.last_name ? " " + m.last_name : ""}`.trim(),
+            email: m.email,
+            avatar: m.avatar_url || "/assets/icons/avatar1.png",
+            roleServer: m.role || "member",
+            role: toUiRole(m.role || "member"),
+          }));
+          setMembers(ms);
+          setCurrentUserRole(data?.current_user_role || null);
+        }}
+      />
+
     </div>
   );
 }
