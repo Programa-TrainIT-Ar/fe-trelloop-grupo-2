@@ -10,6 +10,22 @@ import {
   updateBoardMemberRole
 } from "../../services/boardService";
 
+// URL default de backend
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+
+// Array de avatares por defecto
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+
+// Función para obtener avatar basado en índice
+const getAvatarSrc = (index: number) => {
+  return AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+};
+
 interface ShareBoardModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -62,11 +78,11 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
         const data = await getBoardDetails(boardId);
         setCurrentUserRole((data?.current_user_role || null) as ServerRole | null);
 
-        const ms: BoardMember[] = (data?.members || []).map((m: any) => ({
+        const ms: BoardMember[] = (data?.members || []).map((m: any, index: number) => ({
           id: String(m.id),
           name: `${m.name}${m.last_name ? " " + m.last_name : ""}`.trim(),
           email: m.email,
-          avatar: m.avatar_url || "/assets/icons/avatar1.png",
+          avatar: (m.avatar_url && m.avatar_url !== DEFAULT_CLOUDINARY_URL) ? m.avatar_url : getAvatarSrc(index),
           roleServer: (m.role || "member") as ServerRole,
           role: toUiRole((m.role || "member") as ServerRole),
         }));
@@ -89,14 +105,13 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
     typingRef.current = window.setTimeout(async () => {
       try {
         const res = await searchUsers(searchQuery.trim());
-        setSuggestions(
-          (res || []).map((u: any) => ({
-            id: String(u.id),
-            name: `${u.name}${u.last_name ? " " + u.last_name : ""}`.trim(),
-            email: u.email,
-            avatar_url: u.avatar_url,
-          }))
-        );
+        const suggestionsWithAvatars = (res || []).map((u: any, index: number) => ({
+          id: String(u.id),
+          name: `${u.name}${u.last_name ? " " + u.last_name : ""}`.trim(),
+          email: u.email,
+          avatar_url: (u.avatar_url && u.avatar_url !== DEFAULT_CLOUDINARY_URL) ? u.avatar_url : getAvatarSrc(index),
+        }));
+        setSuggestions(suggestionsWithAvatars);
       } catch {
         setSuggestions([]);
       }
@@ -114,11 +129,11 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
       });
 
       const data = await getBoardDetails(boardId);
-      const ms: BoardMember[] = (data?.members || []).map((m: any) => ({
+      const ms: BoardMember[] = (data?.members || []).map((m: any, index: number) => ({
         id: String(m.id),
         name: `${m.name}${m.last_name ? " " + m.last_name : ""}`.trim(),
         email: m.email,
-        avatar: m.avatar_url || "/assets/icons/avatar1.png",
+        avatar: (m.avatar_url && m.avatar_url !== DEFAULT_CLOUDINARY_URL) ? m.avatar_url : getAvatarSrc(index),
         roleServer: (m.role || "member") as ServerRole,
         role: toUiRole((m.role || "member") as ServerRole),
       }));
@@ -149,11 +164,11 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
         await updateBoardMemberRole(boardId, memberId, toMemberAdmin(newUiRole));
       }
       const data = await getBoardDetails(boardId);
-      const ms: BoardMember[] = (data?.members || []).map((m: any) => ({
+      const ms: BoardMember[] = (data?.members || []).map((m: any, index: number) => ({
         id: String(m.id),
         name: `${m.name}${m.last_name ? " " + m.last_name : ""}`.trim(),
         email: m.email,
-        avatar: m.avatar_url || "/assets/icons/avatar1.png",
+        avatar: (m.avatar_url && m.avatar_url !== DEFAULT_CLOUDINARY_URL) ? m.avatar_url : getAvatarSrc(index),
         roleServer: (m.role || "member") as ServerRole,
         role: toUiRole((m.role || "member") as ServerRole),
       }));
@@ -301,11 +316,11 @@ export default function ShareBoardModal({ isOpen, onClose, boardId }: ShareBoard
         refreshMembers={async () => {
           const data = await getBoardDetails(boardId);
           // @ts-ignore
-          const ms = (data?.members || []).map((m) => ({
+          const ms = (data?.members || []).map((m, index) => ({
             id: String(m.id),
             name: `${m.name}${m.last_name ? " " + m.last_name : ""}`.trim(),
             email: m.email,
-            avatar: m.avatar_url || "/assets/icons/avatar1.png",
+            avatar: (m.avatar_url && m.avatar_url !== DEFAULT_CLOUDINARY_URL) ? m.avatar_url : getAvatarSrc(index),
             roleServer: m.role || "member",
             role: toUiRole(m.role || "member"),
           }));

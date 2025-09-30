@@ -15,6 +15,22 @@ import { searchUsersController } from "controllers/userController";
 
 import { XMarkIcon, CameraIcon } from "@heroicons/react/24/outline";
 
+// URL default de backend
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+
+// Array de avatares por defecto
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+
+// Función para obtener avatar basado en índice
+const getAvatarSrc = (index: number) => {
+  return AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+};
+
 const NewBoard = () => {
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
@@ -102,7 +118,12 @@ const NewBoard = () => {
 
     try {
       const users = await searchUsersController(query);
-      setResults(users);
+      // Asignar avatar por defecto si no hay o es el default de backend
+      const usersWithAvatars = users.map((user: any, index: number) => ({
+        ...user,
+        avatar_url: (user.avatar_url && user.avatar_url !== DEFAULT_CLOUDINARY_URL) ? user.avatar_url : getAvatarSrc(index),
+      }));
+      setResults(usersWithAvatars);
     } catch (error) {
       console.error("❌ Error buscando miembros:", error);
       setResults([]);
@@ -325,13 +346,12 @@ const NewBoard = () => {
               </div>
 
               <div className="container-miembros flex flex-wrap mt-[5px] gap-x-2">
-                {selectedMembers.map((member) => (
-                  <div className="flex flex-wrap ml-1">
+                {selectedMembers.map((member, index) => (
+                  <div className="flex flex-wrap ml-1" key={member.id}>
                     <UserBoard
-                      key={member.id}
                       name={`${member.name} ${member.last_name}`}
                       username={member.name}
-                      img={member.avatar_url}
+                      img={member.avatar_url || getAvatarSrc(index)} // Asignar default basado en índice
                     />
                     <button
                       className="text-white ml-[10px]"

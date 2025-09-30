@@ -75,6 +75,22 @@ const MOCK_SUBTASKS: MockSubtask[] = [
 type UIMember = { id: number; name?: string; img?: string; role?: string };
 type UIComment = { id: number; author: string; avatar?: string; body: string; dateLabel: string };
 
+// URL default de backend
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+
+// Array de avatares por defecto
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+
+// Función para obtener avatar basado en índice
+const getAvatarSrc = (index: number) => {
+  return AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+};
+
 function timeAgo(iso: string): string {
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
@@ -118,12 +134,12 @@ function CommentsPanel({
         const apiComments = await getCardComments(boardId, listId, cardId);
         if (!mounted) return;
         setComments(
-          apiComments.map((c: ApiComment) => {
+          apiComments.map((c: ApiComment, index: number) => {
             const m = memberById.get(Number(c.user_id));
             return {
               id: c.id,
               author: m?.name || `Usuario ${c.user_id}`,
-              avatar: m?.img || "/assets/icons/avatar3.png",
+              avatar: (m?.img && m.img !== DEFAULT_CLOUDINARY_URL) ? m?.img : getAvatarSrc(index),
               body: c.comment,
               dateLabel: timeAgo(c.created_at),
             };
@@ -151,7 +167,7 @@ function CommentsPanel({
       const ui: UIComment = {
         id: created.id,
         author: m?.name || `Usuario ${created.user_id}`,
-        avatar: m?.img || "/assets/icons/avatar3.png",
+        avatar: (m?.img && m.img !== DEFAULT_CLOUDINARY_URL) ? m?.img : getAvatarSrc(0),
         body: created.comment,
         dateLabel: timeAgo(created.created_at),
       };

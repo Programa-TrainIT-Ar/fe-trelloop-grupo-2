@@ -2,6 +2,22 @@ import React, { useState, useEffect } from "react";
 import { getBoardDetails } from "../../services/boardService";
 import { useParams } from "next/navigation";
 
+// URL default de backend
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+
+// Array de avatares por defecto
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+
+// Función para obtener avatar basado en índice
+const getAvatarSrc = (index: number) => {
+  return AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+};
+
 interface BacklogItem {
   id: number;
   descripcion: string;
@@ -66,7 +82,10 @@ const VistaBacklog: React.FC = () => {
             prioridad: card.priority,
             estado: list.name,
             estadoColor: listColor,
-            miembros: card.assignees ? card.assignees : [],
+            miembros: (card.assignees ? card.assignees.map((member: any, index: number) => ({
+              ...member,
+              avatar_url: (member.avatar_url && member.avatar_url !== DEFAULT_CLOUDINARY_URL) ? member.avatar_url : getAvatarSrc(index),
+            })) : []),
             fecha: formatFecha(card.start_date),
           }));
         });
@@ -198,10 +217,10 @@ const VistaBacklog: React.FC = () => {
                 <td className="p-4 border-y border-[rgba(60,60,60,0.7)]">
                   <div className="flex items-center space-x-1">
                     <div className="flex space-x-[-8px]">
-                      {item.miembros.slice(0, 4).map((member) => (
+                      {item.miembros.slice(0, 4).map((member, index) => (
                         <img
-                          key={member.id}
-                          src={member.avatar_url}
+                          key={index}
+                          src={(member.avatar_url && member.avatar_url !== DEFAULT_CLOUDINARY_URL) ? member.avatar_url : getAvatarSrc(index)}
                           alt={member.name}
                           className="w-6 h-6 rounded-full border border-black"
                         />
