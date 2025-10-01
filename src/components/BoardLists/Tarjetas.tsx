@@ -30,7 +30,7 @@ interface TarjetaProps {
   assignees: Assignee[];
   comentarios: number;
   prioridad?: string;
-  editURL?: string; // compatibilidad, no se usa
+  editURL?: string;
 
   // props para delete
   boardId: string;
