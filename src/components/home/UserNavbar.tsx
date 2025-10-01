@@ -3,12 +3,24 @@
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStore";
 import React, { useState, useRef, useEffect } from "react";
+import {
+  fetchNotifications,
+  markAsRead,
+  markAllAsRead,
+  createTestNotification,
+  NotificationData,
+} from "../../services/notificationService";
+import NotificationsModal from "./NotificationsModal";
 
 const UserNavbar = ({ showCreateBoardButton = true }) => {
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   const goTonewBoard = () => {
     router.push("/newBoard");
@@ -25,10 +37,71 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
   };
 
   const handleLogout = async () => {
-    await logout();   //Limpia Zustand y borra el token
-    router.push("/login"); // Redirige al login
+    await logout();
+    router.push("/login");
     console.log("Cerrando sesión...");
     setShowProfileMenu(false);
+  };
+
+  const toggleNotificationsMenu = async () => {
+    if (!showNotificationsMenu) {
+      await loadNotifications();
+    }
+    setShowNotificationsMenu(!showNotificationsMenu);
+  };
+
+  const loadNotifications = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      const updated = await markAsRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? updated : n)));
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const unreadIds = notifications
+        .filter((n) => n.status === "UNREAD")
+        .map((n) => n.id);
+      const updatedNotifications = await markAllAsRead(unreadIds);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          unreadIds.includes(n.id) ? { ...n, status: "READ" } : n
+        )
+      );
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
+  const handleCreateTestNotification = async () => {
+    try {
+      const newNotif = await createTestNotification();
+      setNotifications((prev) => [newNotif, ...prev]);
+      console.log("✅ Notificación de prueba creada");
+    } catch (error) {
+      console.error("Error creating test notification:", error);
+    }
+  };
+
+  const handleNotificationClick = async (notification: NotificationData) => {
+    if (notification.status === "UNREAD")
+      await handleMarkAsRead(notification.id);
+    if (notification.card_id) router.push(`/cards/${notification.card_id}`);
+    setShowNotificationsMenu(false);
   };
 
   useEffect(() => {
@@ -36,20 +109,30 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowProfileMenu(false);
       }
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setShowNotificationsMenu(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+    loadNotifications();
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
     <div className="flex flex-col justify-start items-end w-full bg-[#1A1A1A] px-6 pt-4 pb-6 relative">
-      {/* Línea superior */}
       <div className="flex justify-between items-center w-full">
-        {/* Buscador + Filtro */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-[#2B2B2B] px-4 py-2 rounded-[8px] w-[320px]">
-            <img src="/assets/icons/search.svg" alt="Buscar" className="w-4 h-4" />
+            <img
+              src="/assets/icons/search.svg"
+              alt="Buscar"
+              className="w-4 h-4"
+            />
             <input
               type="text"
               placeholder="Buscar tableros..."
@@ -57,25 +140,45 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
             />
           </div>
           <button className="w-8 h-8 bg-[#2B2B2B] rounded-md flex items-center justify-center">
-            <img src="/assets/icons/filter.svg" alt="Filtrar" className="w-4 h-4" />
+            <img
+              src="/assets/icons/filter.svg"
+              alt="Filtrar"
+              className="w-4 h-4"
+            />
           </button>
         </div>
 
-        {/* Iconos derecha */}
         <div className="flex items-center gap-4 relative">
-          <button onClick={() => router.push("/not-found")} className="w-8 h-8 bg-[#2B2B2B] rounded-md flex items-center justify-center">
-            <img src="/assets/icons/bell.svg" alt="Notificación" className="w-4 h-4" />
+          {/* Botón de notificaciones y modal */}
+          <button onClick={toggleNotificationsMenu}>
+          <img src="/assets/icons/bell.svg" alt="Notificación" className="w-4 h-4" />
           </button>
 
-          {/* Botón de perfil */}
-          <button 
+          {/* Modal de notificaciones */}
+          {showNotificationsMenu && (
+            <NotificationsModal
+              ref={notificationRef}
+              notifications={notifications}
+              loading={loading}
+              onClose={() => setShowNotificationsMenu(false)}
+              onMarkAllAsRead={handleMarkAllAsRead}
+              onCreateTest={handleCreateTestNotification}
+              onNotificationClick={handleNotificationClick}
+            />
+          )}
+
+          {/* Perfil */}
+          <button
             className="w-8 h-8 bg-[#2B2B2B] rounded-full flex items-center justify-center"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           >
-            <img src="/assets/icons/user.svg" alt="Perfil" className="w-4 h-4" />
+            <img
+              src="/assets/icons/user.svg"
+              alt="Perfil"
+              className="w-4 h-4"
+            />
           </button>
 
-          {/* Dropdown de perfil */}
           {showProfileMenu && (
             <div
               ref={menuRef}
@@ -89,8 +192,12 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
                   className="w-[60px] h-[60px] rounded-full object-cover"
                 />
                 <div>
-                  <p className="text-white font-medium text-[14px] leading-none">Nombre del usuario</p>
-                  <p className="text-white font-normal text-[12px] leading-none mt-1">Administrador</p>
+                  <p className="text-white font-medium text-[14px] leading-none">
+                    Nombre del usuario
+                  </p>
+                  <p className="text-white font-normal text-[12px] leading-none mt-1">
+                    Administrador
+                  </p>
                 </div>
               </div>
 
@@ -100,7 +207,11 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
                   onClick={() => router.push("/not-found")}
                   className="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-[#3A3A3A] transition"
                 >
-                  <img src="/assets/icons/user.png" alt="Perfil" className="w-5 h-5" />
+                  <img
+                    src="/assets/icons/user.png"
+                    alt="Perfil"
+                    className="w-5 h-5"
+                  />
                   Perfil de usuario
                 </button>
 
@@ -108,7 +219,11 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
                   onClick={() => router.push("/not-found")}
                   className="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-[#3A3A3A] transition"
                 >
-                  <img src="/assets/icons/key.png" alt="Contraseña" className="w-5 h-5" />
+                  <img
+                    src="/assets/icons/key.png"
+                    alt="Contraseña"
+                    className="w-5 h-5"
+                  />
                   Contraseña
                 </button>
 
@@ -118,7 +233,11 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
                   onClick={handleLogout}
                   className="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-[#3A3A3A] transition"
                 >
-                  <img src="/assets/icons/log-out.png" alt="Salir" className="w-5 h-5" />
+                  <img
+                    src="/assets/icons/log-out.png"
+                    alt="Salir"
+                    className="w-5 h-5"
+                  />
                   Cerrar sesión
                 </button>
               </div>
@@ -127,7 +246,6 @@ const UserNavbar = ({ showCreateBoardButton = true }) => {
         </div>
       </div>
 
-      {/* Botón Crear tablero - Se renderiza solo si showCreateBoardButton es true */}
       {showCreateBoardButton && (
         <div className="mt-4">
           <button

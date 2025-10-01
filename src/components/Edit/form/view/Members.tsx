@@ -4,7 +4,7 @@ import { useMemberSearch } from "../controllers/useMemberSearch";
 import MemberSearchResult from "./MemberSearchResult";
 
 const DEFAULT_IMAGE_URL =
-  "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+  "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
 
 type Member = {
   id: string;

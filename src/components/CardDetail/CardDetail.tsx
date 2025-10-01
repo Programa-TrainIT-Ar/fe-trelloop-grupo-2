@@ -7,6 +7,7 @@ import UserNavbar from "components/home/UserNavbar";
 import { useCardForm } from "hooks/useCardForm";
 import { deleteCardById, moveCardToList } from "services/cardService";
 import { getBoardListsService } from "services/boardListService";
+import { createCardComment, getCardComments, ApiComment } from "services/commentService";
 
 /* ---------- Utils ---------- */
 const norm = (s: string) => s?.toLowerCase().replace(/[_-]/g, " ").trim();
@@ -23,7 +24,18 @@ function getPriorityChip(priorityRaw: string | undefined) {
   return null;
 }
 
-const PALETTE = ["#2E90FA", "#12B76A", "#F59E0B", "#A855F7", "#EF4444", "#06B6D4", "#F97316", "#22C55E", "#EAB308", "#DB2777"];
+const PALETTE = [
+  "#2E90FA",
+  "#12B76A",
+  "#F59E0B",
+  "#A855F7",
+  "#EF4444",
+  "#06B6D4",
+  "#F97316",
+  "#22C55E",
+  "#EAB308",
+  "#DB2777",
+];
 const hashIndex = (str: string, mod: number) => {
   let h = 0;
   for (let i = 0; i < str.length; i++) {
@@ -59,56 +71,108 @@ const MOCK_SUBTASKS: MockSubtask[] = [
   { id: 3, title: "Implementar diseño", assignee: "Iván Andrade", due: "DD-MM-YYYY", done: false },
 ];
 
-/* ---------- Comentarios (mock) ---------- */
-type CommentItem = { id: number; author: string; avatar?: string; body: string; dateLabel: string };
-function CommentsPanel() {
-  const [comments, setComments] = React.useState<CommentItem[]>([
-    {
-      id: 1,
-      author: "Nombre completo",
-      avatar: "/assets/icons/avatar3.png", // ← icono solicitado
-      body:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-      dateLabel: "hace 8 horas",
-    },
-    {
-      id: 2,
-      author: "Nombre completo",
-      avatar: "/assets/icons/avatar3.png", // ← icono solicitado
-      body:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-      dateLabel: "ayer",
-    },
-  ]);
+/* ---------- Comentarios ---------- */
+type UIMember = { id: number; name?: string; img?: string; role?: string };
+type UIComment = { id: number; author: string; avatar?: string; body: string; dateLabel: string };
 
+function timeAgo(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const sec = Math.max(1, Math.floor(diff / 1000));
+  const min = Math.floor(sec / 60);
+  const hr = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+  if (day > 0) return day === 1 ? "hace 1 día" : `hace ${day} días`;
+  if (hr > 0) return hr === 1 ? "hace 1 hora" : `hace ${hr} horas`;
+  if (min > 0) return min === 1 ? "hace 1 minuto" : `hace ${min} minutos`;
+  return "ahora";
+}
+
+function CommentsPanel({
+  boardId,
+  listId,
+  cardId,
+  members,
+}: {
+  boardId: number;
+  listId: number;
+  cardId: number;
+  members: UIMember[];
+}) {
+  const [comments, setComments] = React.useState<UIComment[]>([]);
   const [newComment, setNewComment] = React.useState("");
-  const addComment = () => {
+  const [loading, setLoading] = React.useState(true);
+  const [posting, setPosting] = React.useState(false);
+
+  const memberById = React.useMemo(() => {
+    const map = new Map<number, UIMember>();
+    (members || []).forEach((m) => m?.id && map.set(Number(m.id), m));
+    return map;
+  }, [members]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const apiComments = await getCardComments(boardId, listId, cardId);
+        if (!mounted) return;
+        setComments(
+          apiComments.map((c: ApiComment) => {
+            const m = memberById.get(Number(c.user_id));
+            return {
+              id: c.id,
+              author: m?.name || `Usuario ${c.user_id}`,
+              avatar: m?.img || "/assets/icons/avatar3.png",
+              body: c.comment,
+              dateLabel: timeAgo(c.created_at),
+            };
+          })
+        );
+      } catch {
+      } finally {
+        if (!mounted) return;
+        setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [boardId, listId, cardId, memberById]);
+
+  const addComment = async () => {
     const text = newComment.trim();
-    if (!text) return;
-    setComments((prev) => [
-      { id: Date.now(), author: "Tú", avatar: "/assets/icons/avatar3.png", body: text, dateLabel: "ahora" },
-      ...prev,
-    ]);
-    setNewComment("");
+    if (!text || posting) return;
+    try {
+      setPosting(true);
+      const created = await createCardComment(boardId, listId, cardId, text);
+
+      const m = memberById.get(Number(created.user_id));
+      const ui: UIComment = {
+        id: created.id,
+        author: m?.name || `Usuario ${created.user_id}`,
+        avatar: m?.img || "/assets/icons/avatar3.png",
+        body: created.comment,
+        dateLabel: timeAgo(created.created_at),
+      };
+      setComments((prev) => [ui, ...prev]);
+      setNewComment("");
+    } catch (e: any) {
+      alert(e?.message || "No se pudo enviar el comentario");
+    } finally {
+      setPosting(false);
+    }
   };
 
   const isEmpty = newComment.trim().length === 0;
 
   return (
     <div className="rounded-lg bg-[#272727] p-4 border border-[rgba(60,60,60,0.7)]">
-      {/* Título con icono correcto */}
       <div className="flex items-center gap-2 mb-3">
-        <img
-          src="/assets/icons/messages-square.png"
-          alt="Comentarios"
-          width={18}
-          height={18}
-          className="opacity-80"
-        />
+        <img src="/assets/icons/messages-square.png" alt="Comentarios" width={18} height={18} className="opacity-80" />
         <span className="text-[13px] font-medium">Comentarios</span>
       </div>
 
-      {/* Caja de entrada + botón (en columna, botón debajo) */}
       <div className="flex flex-col">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1f1f1f] flex items-center justify-center shrink-0">
@@ -120,7 +184,6 @@ function CommentsPanel() {
             />
           </div>
 
-          {/* Input con medidas exactas */}
           <textarea
             placeholder="Escribe aquí..."
             value={newComment}
@@ -143,17 +206,16 @@ function CommentsPanel() {
           />
         </div>
 
-        {/* Botón Enviar (debajo, alineado a la derecha) */}
         <div className="flex justify-end mt-2 pl-11">
           <button
             type="button"
             onClick={addComment}
-            disabled={isEmpty}
+            disabled={isEmpty || posting}
             style={{
               width: 110,
               height: 37,
               background: "rgba(106, 95, 255, 1)",
-              opacity: isEmpty ? 0.5 : 1,          // ← cambia con el contenido
+              opacity: isEmpty || posting ? 0.5 : 1,
               borderRadius: 8,
               padding: "8px 16px",
               fontFamily: "Poppins",
@@ -161,54 +223,84 @@ function CommentsPanel() {
               fontSize: 14,
               lineHeight: "100%",
               color: "rgba(255, 255, 255, 1)",
-              cursor: isEmpty ? "not-allowed" : "pointer",
+              cursor: isEmpty || posting ? "not-allowed" : "pointer",
             }}
             className="transition-opacity"
           >
-            Enviar
+            {posting ? "Enviando..." : "Enviar"}
           </button>
         </div>
       </div>
 
-      {/* Lista de comentarios */}
-      <div className="mt-4 max-h-[420px] overflow-y-auto pr-2 flex flex-col gap-5">
-        {comments.map((c) => (
-          <div key={c.id} className="flex gap-3 overflow-hidden">
-            {/* Avatar */}
-            <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1f1f1f] flex-shrink-0">
-              <img
-                src={c.avatar || "/assets/icons/avatar3.png"}
-                alt={c.author}
-                className="w-full h-full object-cover"
-                onError={(e: any) => (e.currentTarget.src = "/assets/icons/avatar3.png")}
-              />
-            </div>
-
-            {/* Contenido */}
-            <div className="flex-1">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[14px]">{c.author}</span>
-                  <span className="text-[11px] opacity-60">{c.dateLabel}</span>
+      <div className="mt-4 relative">
+        <div
+          className="commentsScroll pr-2 flex flex-col gap-5 max-h-[420px] overflow-y-auto touch-pan-y pointer-events-auto"
+          style={{
+            overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
+            msOverflowStyle: "auto",
+            overflowY: "auto" as any,
+          }}
+        >
+          {loading ? (
+            <div className="text-sm opacity-70">Cargando comentarios…</div>
+          ) : comments.length === 0 ? (
+            <div className="text-sm opacity-70">Aún no hay comentarios.</div>
+          ) : (
+            comments.map((c) => (
+              <div key={c.id} className="flex gap-3 items-start">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1f1f1f] flex-shrink-0">
+                  <img
+                    src={c.avatar || "/assets/icons/avatar3.png"}
+                    alt={c.author}
+                    className="w-full h-full object-cover"
+                    onError={(e: any) => (e.currentTarget.src = "/assets/icons/avatar3.png")}
+                  />
                 </div>
-                <button className="p-1 rounded hover:bg-[#333]" title="Opciones">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="5" r="2" />
-                    <circle cx="12" cy="12" r="2" />
-                    <circle cx="12" cy="19" r="2" />
-                  </svg>
-                </button>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[14px] truncate">{c.author}</span>
+                      <span className="text-[11px] opacity-60 whitespace-nowrap">{c.dateLabel}</span>
+                    </div>
+                    <button className="p-1 rounded hover:bg-[#333]" title="Opciones">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2" />
+                        <circle cx="12" cy="12" r="2" />
+                        <circle cx="12" cy="19" r="2" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <p className="mt-1 text-[13px] leading-[1.4] opacity-90 whitespace-pre-wrap break-words">
+                    {c.body}
+                  </p>
+
+                  <button type="button" className="mt-2 text-[11px] opacity-70 hover:opacity-100">
+                    Responder
+                  </button>
+                </div>
               </div>
-              <p className="mt-1 text-[13px] leading-[1.4] opacity-90">{c.body}</p>
-              <button type="button" className="mt-2 text-[11px] opacity-70 hover:opacity-100">
-                Responder
-              </button>
-            </div>
+            ))
+          )}
+        </div>
 
-          </div>
-        ))}
+        <style jsx global>{`
+          .commentsScroll::-webkit-scrollbar { width: 8px !important; }
+          .commentsScroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.06) !important; border-radius: 8px;
+          }
+          .commentsScroll::-webkit-scrollbar-thumb {
+            background-color: rgba(106, 95, 255, 0.9) !important; border-radius: 8px;
+          }
+
+          .commentsScroll {
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(106, 95, 255, 0.9) rgba(255, 255, 255, 0.06) !important;
+          }
+        `}</style>
       </div>
-
     </div>
   );
 }
@@ -222,26 +314,22 @@ export default function CardDetail() {
   const cardId = Number(params.cardId);
 
   const { form, loading, error, handleFormChange, handleDateChange, handleSubmit } = useCardForm();
+  const [isPageLoading, setIsPageLoading] = useState(true); // Nuevo estado para la carga de la página
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showMoveArea, setShowMoveArea] = useState(true); // área del select visible por defecto
+  const [showMoveArea, setShowMoveArea] = useState(true);
   const [lists, setLists] = useState<{ id: number; name: string }[]>([]);
   const [moving, setMoving] = useState(false);
   const [targetList, setTargetList] = useState<number | null>(null);
 
-  // confirmación de eliminación
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Tabs locales
   const [activeTab, setActiveTab] = useState<"detallada" | "secciones">("detallada");
-
-  // subtareas locales
   const [subtasks, setSubtasks] = useState(MOCK_SUBTASKS);
   const completed = subtasks.filter((t) => t.done).length;
   const progressPct = subtasks.length ? Math.round((completed / subtasks.length) * 100) : 0;
 
-  // Fecha – helpers para DD-MM-YYYY + date picker anclado
   const datePickerRef = useRef<HTMLInputElement | null>(null);
   const formatDDMMYYYY = (d: Date | null) => {
     if (!d) return "";
@@ -264,18 +352,15 @@ export default function CardDetail() {
         const data = await getBoardListsService(String(boardId));
         setLists((data || []).map((l: any) => ({ id: l.id, name: l.name })));
       } catch {}
+      setIsPageLoading(false); // Marcar como cargada después de obtener las listas
     })();
   }, [boardId]);
 
   const priorityChip = useMemo(() => getPriorityChip(form.priority), [form.priority]);
   const currentListName = lists.find((l) => l.id === listId)?.name || "";
-  const listBg = useMemo(
-    () => (currentListName ? PALETTE[hashIndex(currentListName, PALETTE.length)] : "#2B2B2B"),
-    [currentListName]
-  );
+  const listBg = useMemo(() => (currentListName ? PALETTE[hashIndex(currentListName, PALETTE.length)] : "#2B2B2B"), [currentListName]);
   const listText = useMemo(() => contrastText(listBg), [listBg]);
 
-  // ---- Mover tarjeta
   const onMove = async () => {
     if (!targetList) return;
     try {
@@ -290,7 +375,6 @@ export default function CardDetail() {
     }
   };
 
-  // ---- Eliminar (confirm modal)
   const openDeleteConfirm = () => {
     setMenuOpen(false);
     setShowDeleteModal(true);
@@ -308,7 +392,6 @@ export default function CardDetail() {
     }
   };
 
-  // cerrar menú al hacer click fuera o ESC
   const menuRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -330,69 +413,49 @@ export default function CardDetail() {
     };
   }, [menuOpen]);
 
-  if (loading) return <div className="p-6 text-white">Cargando tarjeta...</div>;
+  if (isPageLoading || loading) return (
+    <div className="flex items-center justify-center min-h-screen w-full bg-[#191919]">
+      <div className="text-white">Cargando tarjeta...</div>
+    </div>
+  );
   if (error) return <div className="p-6 text-red-300">{error}</div>;
 
   return (
     <div className="flex min-h-screen w-full bg-[#191919]">
-      {/* Sidebar */}
       <div
-        className="shrink-0 minh-screen min-h-screen"
+        className="shrink-0 min-h-screen"
         style={{ background: "rgba(0, 0, 0, 0.07)", borderRight: "1px solid rgba(43, 43, 43, 1)" }}
       >
         <DashboardSidebar />
       </div>
 
-      {/* Contenido */}
       <div className="min-w-0 w-full text-white">
         <UserNavbar showCreateBoardButton={false} />
 
         <div className="px-6 pb-10">
-          {/* Barra superior */}
           <div className="w-[1124px] max-w-full mx-auto">
             <div className="flex items-center justify-between h-[40px] rounded-lg border border-[rgba(60,60,60,0.7)] bg-[#272727] px-4">
-              {/* Izquierda: volver */}
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => router.push(`/boardList/${boardId}`)}
-                  className="p-1 rounded hover:bg-[#333]"
-                  aria-label="Volver"
-                >
+                <button onClick={() => router.push(`/boardList/${boardId}`)} className="p-1 rounded hover:bg-[#333]" aria-label="Volver">
                   <img src="/assets/icons/arrow-left.png" alt="Volver" className="w-5 h-5" />
                 </button>
                 <span className="opacity-70">Volver</span>
               </div>
 
-              {/* Derecha: menú + cerrar */}
               <div className="relative flex items-center gap-1" ref={menuRef}>
-                <button
-                  onClick={() => setMenuOpen((v) => !v)}
-                  className="p-1 rounded hover:bg-[#333]"
-                  aria-label="Opciones"
-                >
+                <button onClick={() => setMenuOpen((v) => !v)} className="p-1 rounded hover:bg-[#333]" aria-label="Opciones">
                   <img src="/assets/icons/ellipsis.svg" className="w-6 h-6 rotate-90" alt="opciones" />
                 </button>
 
-                <button
-                  onClick={() => router.push(`/boardList/${boardId}`)}
-                  className="p-1 rounded hover:bg-[#333]"
-                  aria-label="Cerrar"
-                  title="Cerrar"
-                >
+                <button onClick={() => router.push(`/boardList/${boardId}`)} className="p-1 rounded hover:bg-[#333]" aria-label="Cerrar" title="Cerrar">
                   <img src="/assets/icons/x.png" className="w-4 h-4" alt="Cerrar" />
                 </button>
 
-                {/* Modal de opciones (tres puntos) */}
                 {menuOpen && (
                   <div
                     className="absolute right-0 top-full mt-2 z-20 rounded-[8px]"
-                    style={{
-                      width: 249,
-                      background: "rgba(0,0,0,1)",
-                      padding: "16px 20px 16px 16px",
-                    }}
+                    style={{ width: 249, background: "rgba(0,0,0,1)", padding: "16px 20px 16px 16px" }}
                   >
-                    {/* Item: Mover tarjeta de lista */}
                     <button
                       type="button"
                       onClick={() => setShowMoveArea((v) => !v)}
@@ -400,19 +463,9 @@ export default function CardDetail() {
                       style={{ padding: "8px 16px" }}
                     >
                       <img src="/assets/icons/arrow-left-right.png" width={20} height={20} alt="" />
-                      <span
-                        style={{
-                          fontFamily: "Poppins",
-                          fontWeight: 500,
-                          fontSize: 14,
-                          lineHeight: "100%",
-                        }}
-                      >
-                        Mover tarjeta de lista
-                      </span>
+                      <span style={{ fontFamily: "Poppins", fontWeight: 500, fontSize: 14, lineHeight: "100%" }}>Mover tarjeta de lista</span>
                     </button>
 
-                    {/* Área con select + botón (ajustada para no desbordar) */}
                     {showMoveArea && (
                       <div className="mt-2 px-4 w-full">
                         <div className="flex items-center gap-2 w-full">
@@ -441,7 +494,6 @@ export default function CardDetail() {
                       </div>
                     )}
 
-                    {/* Item: Eliminar tarjeta */}
                     <button
                       type="button"
                       onClick={openDeleteConfirm}
@@ -449,16 +501,7 @@ export default function CardDetail() {
                       style={{ padding: "8px 16px" }}
                     >
                       <img src="/assets/icons/lucide_trash-2.png" width={18} height={18} alt="" />
-                      <span
-                        style={{
-                          fontFamily: "Poppins",
-                          fontWeight: 500,
-                          fontSize: 14,
-                          lineHeight: "100%",
-                        }}
-                      >
-                        Eliminar tarjeta
-                      </span>
+                      <span style={{ fontFamily: "Poppins", fontWeight: 500, fontSize: 14, lineHeight: "100%" }}>Eliminar tarjeta</span>
                     </button>
                   </div>
                 )}
@@ -466,9 +509,7 @@ export default function CardDetail() {
             </div>
           </div>
 
-          {/* Cuerpo principal (GRID para alinear Comentarios con la Descripción) */}
           <div className="mt-4 w-[1124px] max-w-full mx-auto grid grid-cols-[1fr_360px] gap-4 items-start">
-            {/* Fila 1, Col 1: Chips + título */}
             <div className="rounded-lg bg-[#272727] p-4 border border-[rgba(60,60,60,0.7)]">
               <div className="flex items-center gap-2 mb-3">
                 {priorityChip && <Pill style={priorityChip.style}>{priorityChip.label}</Pill>}
@@ -482,12 +523,9 @@ export default function CardDetail() {
               />
             </div>
 
-            {/* Fila 1, Col 2: vacío a propósito para que la columna de comentarios arranque en la fila 2 */}
             <div />
 
-            {/* Fila 2, Col 1: resto del contenido izquierdo */}
             <div className="flex flex-col gap-4">
-              {/* Descripción */}
               <div className="rounded-lg bg-[#272727] p-4 border border-[rgba(60,60,60,0.7)]">
                 <label className="block mb-2 opacity-70">Descripción</label>
                 <textarea
@@ -498,10 +536,8 @@ export default function CardDetail() {
                 />
               </div>
 
-              {/* Responsable / Miembros / Fecha */}
               <div className="rounded-lg bg-[#272727] p-4 border border-[rgba(60,60,60,0.7)]">
                 <div className="grid grid-cols-3 gap-4">
-                  {/* Responsables */}
                   <div>
                     <div className="text-sm opacity-70 mb-1">Responsable</div>
                     <div className="flex -space-x-2">
@@ -517,7 +553,6 @@ export default function CardDetail() {
                     </div>
                   </div>
 
-                  {/* Miembros */}
                   <div>
                     <div className="text-sm opacity-70 mb-1">Miembros</div>
                     <div className="flex -space-x-2">
@@ -534,7 +569,6 @@ export default function CardDetail() {
                     </div>
                   </div>
 
-                  {/* Fecha de tarjeta — estilos + picker anclado */}
                   <div>
                     <div className="text-sm opacity-70 mb-1">Fecha de tarjeta</div>
                     <div
@@ -545,10 +579,9 @@ export default function CardDetail() {
                         background: "rgba(255,255,255,0.04)",
                         border: "1px solid rgba(60,60,60,0.7)",
                         borderRadius: 8,
-                        padding: "0 16px",     // el padding lo manejamos con pr en el input
+                        padding: "0 16px",
                       }}
                     >
-                      {/* Input ocupa todo y deja espacio a la derecha para el icono */}
                       <input
                         type="text"
                         inputMode="numeric"
@@ -562,7 +595,6 @@ export default function CardDetail() {
                         style={{ fontFamily: "Roboto", fontWeight: 400, lineHeight: "100%", color: "rgba(113,113,113,1)" }}
                       />
 
-                      {/* Icono POSICIONADO ABSOLUTO dentro del contenedor */}
                       <button
                         type="button"
                         onClick={() => datePickerRef.current?.showPicker?.() || datePickerRef.current?.click()}
@@ -572,7 +604,6 @@ export default function CardDetail() {
                         <img src="/assets/icons/calendar-days.png" alt="calendar" width={20} height={20} />
                       </button>
 
-                      {/* input date oculto para lanzar el picker (anclado al mismo sitio) */}
                       <input
                         ref={datePickerRef}
                         type="date"
@@ -580,7 +611,7 @@ export default function CardDetail() {
                         style={{ width: 1, height: 1, pointerEvents: "none" }}
                         value={form.endDate ? new Date(form.endDate).toISOString().slice(0, 10) : ""}
                         onChange={(e) => {
-                          const v = e.target.value; // YYYY-MM-DD
+                          const v = e.target.value;
                           const d = v ? new Date(v) : null;
                           handleDateChange([form.startDate ? new Date(form.startDate) : null, d]);
                         }}
@@ -590,7 +621,6 @@ export default function CardDetail() {
                 </div>
               </div>
 
-              {/* Vista: Detallada / Secciones */}
               <div className="flex items-center gap-2">
                 <span
                   className="select-none"
@@ -660,7 +690,6 @@ export default function CardDetail() {
                 </div>
               </div>
 
-              {/* Subtareas */}
               <div className="rounded-lg bg-[#272727] p-4 border border-[rgba(60,60,60,0.7)]">
                 <div className="mb-2 font-semibold">Subtareas</div>
 
@@ -700,10 +729,8 @@ export default function CardDetail() {
                             }
                             className="w-[16px] h-[16px] rounded-[3px] appearance-none cursor-pointer"
                             style={{
-                              // desmarcado: borde gris exacto
                               border: t.done ? "1px solid #6A5FFF" : "1px solid rgba(116, 113, 113, 1)",
                               backgroundColor: t.done ? "#6A5FFF" : "transparent",
-                              // marcado: check blanco
                               backgroundImage: t.done
                                 ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='white' d='M6.1 11.2l-3-3 .8-.8 2.2 2.1 4.9-4.9.8.8z'/%3E%3C/svg%3E\")"
                                 : "none",
@@ -759,7 +786,6 @@ export default function CardDetail() {
                 </div>
               </div>
 
-              {/* Seguimiento (mock) */}
               <div className="rounded-lg bg-[#272727] p-4 border border-[rgba(60,60,60,0.7)]">
                 <div className="mb-3 font-semibold">Seguimiento</div>
                 <div className="grid grid-cols-3 gap-3">
@@ -779,13 +805,16 @@ export default function CardDetail() {
               </div>
             </div>
 
-            {/* Fila 2, Col 2: Comentarios (arranca a la altura de la Descripción) */}
-            <div className="">
-              <CommentsPanel />
+            <div>
+              <CommentsPanel
+                boardId={boardId}
+                listId={listId}
+                cardId={cardId}
+                members={(form as any).members || []}
+              />
             </div>
           </div>
 
-          {/* Botones al final */}
           <div className="mt-6 w-[1124px] max-w-full mx-auto flex justify-end gap-4">
             <button
               onClick={() => router.push(`/boardList/${boardId}`)}
@@ -803,7 +832,6 @@ export default function CardDetail() {
         </div>
       </div>
 
-      {/* Modal confirmación eliminar */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-60">
           <div className="w-[460px] h-[274px] bg-[#222222] rounded-[16px] flex flex-col items-center px-6 py-4 relative">

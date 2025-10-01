@@ -17,6 +17,10 @@ import { XMarkIcon, CameraIcon } from "@heroicons/react/24/outline";
 
 const NewBoard = () => {
   const [name, setName] = useState("");
+  const [nameTouched, setNameTouched] = useState(false);
+  const [nameError, setNameError] = useState('')
+  const nameInputRef = useRef(null)
+
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
 
@@ -59,6 +63,29 @@ const NewBoard = () => {
       avatar_url: string;
     }>
   >([]);
+
+  //verificacion de datos previa a la creación del tablero
+
+  // @ts-ignore
+  const validateName = (value) => {
+    if (!value.trim()) return 'El nombre no puede estar vacío.';
+    if (value.trim().length > 70) return 'El nombre debe tener máximo 70 caracteres.';
+    return '';
+  };
+
+  // @ts-ignore
+  const handleNameChange = (e) => {
+    setName(e.target.value);
+    if (nameTouched) {
+      setNameError(validateName(e.target.value));
+    }
+  };
+
+  const handleNameBlur = () => {
+    setNameTouched(true);
+    setNameError(validateName(name))
+  };
+
 
   //lógica para la busqueda y filtración de miembros y etiquetas
 
@@ -123,6 +150,16 @@ const NewBoard = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    //validar nombre
+    const nameValidationError = validateName(name);
+    if (nameValidationError) {
+      setNameError(nameValidationError);
+      setNameTouched(true);
+      // @ts-ignore
+      nameInputRef.current?.focus();
+      return;
+    }
 
     const formData = new FormData();
     formData.append("name", name);
@@ -199,10 +236,17 @@ const NewBoard = () => {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  ref={nameInputRef}
+                  onChange={handleNameChange}
+                  onBlur={handleNameBlur}
                   placeholder="Escribe aquí..."
                   className="w-full h-[48px] bg-[#1e1e1e] text-white placeholder-[#797676] rounded-xl px-2 py-2 border border-[#3c3c3c] outline-none focus:ring-1 focus:ring-[#6A5FFF] focus:border-[#6A5FFF] transition-all duration-200"
                 />
+                {nameError && (
+                  <span className="text-red-500 text-sm mt-1 block">
+                    {nameError}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -408,11 +452,10 @@ const NewBoard = () => {
                     className="sr-only"
                   />
                   <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                      status === "PRIVATE"
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${status === "PRIVATE"
                         ? "border-[#6A5FFF] bg-[#6A5FFF]"
                         : "border-gray-500 group-hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     {status === "PRIVATE" && (
                       <div className="w-1.5 h-1.5 bg-[#6A5FFF] rounded-full"></div>
@@ -456,11 +499,10 @@ const NewBoard = () => {
                     className="sr-only"
                   />
                   <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                      status === "PUBLIC"
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${status === "PUBLIC"
                         ? "border-[#6A5FFF] bg-[#6A5FFF]"
                         : "border-gray-500 group-hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     {status === "PUBLIC" && (
                       <div className="w-1.5 h-1.5 bg-[#6A5FFF] rounded-full"></div>

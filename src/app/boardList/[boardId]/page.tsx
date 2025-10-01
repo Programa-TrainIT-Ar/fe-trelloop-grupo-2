@@ -127,18 +127,17 @@ export default function BoardListPage() {
         </div>
 
         {/* Renderizado de componentes condicional */}
-        <section className="flex-1 min-h-0 overflow-hidden flex">
+        <section className="flex-1 min-h-0 overflow-auto flex">
           {vistaActiva === "backlog" && <VistaBacklog />}
-          {vistaActiva === "lists" &&
-            (boardId ? (
+          {vistaActiva === "lists" && (
+            <div className="flex-1 overflow-x-auto">
               <VistaListas
                 boardId={boardId}
                 isBoardOwner={boardPermissions.isOwner}
                 isBoardMember={boardPermissions.isMember}
               />
-            ) : (
-              <p>Cargando...</p>
-            ))}
+            </div>
+          )}
         </section>
       </main>
 
