@@ -16,7 +16,7 @@ import { searchUsersController } from "controllers/userController";
 import { XMarkIcon, CameraIcon } from "@heroicons/react/24/outline";
 
 // URL default de backend
-const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
 
 // Array de avatares por defecto
 const AVATAR_IMAGES = [

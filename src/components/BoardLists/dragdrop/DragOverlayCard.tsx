@@ -1,6 +1,15 @@
 import React from "react";
 import { Card } from "./types";
 
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+const getAvatarSrc = (index: number) => AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+
 const DragOverlayCard: React.FC<{ activeCard: Card | null }> = ({ activeCard }) => {
   if (!activeCard) return null;
 
@@ -26,14 +35,20 @@ const DragOverlayCard: React.FC<{ activeCard: Card | null }> = ({ activeCard }) 
 
         <div className="flex justify-between items-center text-gray-400 text-sm">
           <div className="flex -space-x-2">
-            {activeCard.assignees?.slice(0, 2).map((user, idx) => (
-              <img
-                key={idx}
-                src={user.avatar_url}
-                alt={user.name}
-                className="w-6 h-6 rounded-full border-[0.5px] border-black"
-              />
-            ))}
+            {activeCard.assignees?.slice(0, 2).map((user, idx) => {
+              const avatarSrc =
+                user?.avatar_url && user.avatar_url !== DEFAULT_CLOUDINARY_URL
+                  ? user.avatar_url
+                  : getAvatarSrc(idx);
+              return (
+                <img
+                  key={idx}
+                  src={avatarSrc}
+                  alt={user?.name ?? "Miembro"}
+                  className="w-6 h-6 rounded-full border-[0.5px] border-black"
+                />
+              );
+            })}
           </div>
         </div>
       </div>

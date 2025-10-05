@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
 
 interface UserBoardProps {
   name: string;

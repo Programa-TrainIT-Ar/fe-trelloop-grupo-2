@@ -4,7 +4,7 @@ import MemberSearchResult from "components/Edit/form/view/MemberSearchResult";
 import { useResponsibleSearch } from "hooks/useResponsibleSearch";
 
 // URL default de backend
-const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
 
 // Array de avatares por defecto
 const AVATAR_IMAGES = [

@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useCardTags } from 'hooks/useCardTags';
 
 // URL default de backend
-const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
 
 // Array de avatares por defecto
 const AVATAR_IMAGES = [
@@ -124,9 +124,9 @@ const Form = ({ boardId }: Props) => {
     formData.append("description", description);
     formData.append("status", visibility);
 
-    // 👇 Añadir imagen solo si es un archivo nuevo
+    // Añadir imagen solo si es un archivo nuevo
     if (imageUrl instanceof File) {
-      formData.append("image", imageUrl); // 👈 este es el campo que espera el backend
+      formData.append("image", imageUrl); // este es el campo que espera el backend
     }
 
     members.forEach((m) => {
