@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
+
 interface UserBoardProps {
   name: string;
   username: string;
@@ -7,11 +9,14 @@ interface UserBoardProps {
 }
 
 export const UserBoard = ({ name, username, img }: UserBoardProps) => {
+  // Fallback si img es vacío o default Cloudinary
+  const resolvedImg = (img && img !== DEFAULT_CLOUDINARY_URL) ? img : "/assets/icons/avatar1.png"; // O usa cycling si pasas index
+
   return (
     <div className="member flex items-center mr-[15px] mt-[8px]">
       <div className="member-img mr-[5px]">
         <Image
-          src={img}
+          src={resolvedImg}
           alt="member-img"
           width={28}
           height={28}

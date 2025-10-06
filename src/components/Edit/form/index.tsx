@@ -10,6 +10,22 @@ import { getToken } from '../../../store/authStore';
 import { useRouter } from 'next/navigation';
 import { useCardTags } from 'hooks/useCardTags';
 
+// URL default de backend
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
+
+// Array de avatares por defecto
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+
+// Función para obtener avatar basado en índice
+const getAvatarSrc = (index: number) => {
+  return AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+};
+
 type Props = {
   boardId: string;
 };
@@ -52,12 +68,12 @@ const Form = ({ boardId }: Props) => {
         setDescription(data.description || '');
         setImageUrl(data.board_image_url || '');
         setMembers(
-          (data.members || []).map((user: any) => ({
+          (data.members || []).map((user: any, index: number) => ({
             id: String(user.id),
             name: `${user.name} ${user.last_name}`.trim(),
             username: user.email?.split("@")[0] || "usuario",
             email: user.email,
-            img: user.avatar_url,
+            img: (user.avatar_url && user.avatar_url !== DEFAULT_CLOUDINARY_URL) ? user.avatar_url : getAvatarSrc(index),
           }))
         );
         setFormTags(data.tags);
@@ -108,9 +124,9 @@ const Form = ({ boardId }: Props) => {
     formData.append("description", description);
     formData.append("status", visibility);
 
-    // 👇 Añadir imagen solo si es un archivo nuevo
+    // Añadir imagen solo si es un archivo nuevo
     if (imageUrl instanceof File) {
-      formData.append("image", imageUrl); // 👈 este es el campo que espera el backend
+      formData.append("image", imageUrl); // este es el campo que espera el backend
     }
 
     members.forEach((m) => {

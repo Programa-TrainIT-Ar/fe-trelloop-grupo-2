@@ -3,6 +3,22 @@ import React, { useState, useRef, useEffect } from "react";
 import DeleteCardButton from "./DeleteCardButton";
 import { formatToDDMMYYYY, truncateDate } from "utils/dates";
 
+// URL default de backend
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
+
+// Array de avatares por defecto
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+
+// Función para obtener avatar basado en índice
+const getAvatarSrc = (index: number) => {
+  return AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+};
+
 interface Assignee {
   avatar_url: string;
   name: string;
@@ -14,7 +30,7 @@ interface TarjetaProps {
   assignees: Assignee[];
   comentarios: number;
   prioridad?: string;
-  editURL?: string; // compatibilidad, no se usa
+  editURL?: string;
 
   // props para delete
   boardId: string;
@@ -171,9 +187,9 @@ const Tarjeta: React.FC<TarjetaProps> = ({
                 assignees.map((user, idx) => (
                   <img
                     key={idx}
-                    src={user.avatar_url}
+                    src={(user.avatar_url && user.avatar_url !== DEFAULT_CLOUDINARY_URL) ? user.avatar_url : getAvatarSrc(idx)}
                     alt={user.name}
-                    className="w-6 h-6 rounded-full border-[0.5px] border-black"
+                    className="w-6 h-6 rounded-full border border-black"
                   />
                 ))
               ) : (
@@ -181,12 +197,12 @@ const Tarjeta: React.FC<TarjetaProps> = ({
                   {assignees.slice(0, 2).map((user, idx) => (
                     <img
                       key={idx}
-                      src={user.avatar_url}
+                      src={(user.avatar_url && user.avatar_url !== DEFAULT_CLOUDINARY_URL) ? user.avatar_url : getAvatarSrc(idx)}
                       alt={user.name}
-                      className="w-6 h-6 rounded-full border-[0.5px] border-black"
+                      className="w-6 h-6 rounded-full border border-black"
                     />
                   ))}
-                  <div className="w-6 h-6 flex items-center justify-center rounded-full border-[0.5px] border-gray-400 bg-[#3a3a3a] text-white text-xs leading-none font-medium">
+                  <div className="w-6 h-6 flex items-center justify-center rounded-full border border-gray-400 bg-[#3a3a3a] text-white text-xs leading-none font-medium">
                     {assignees.length}
                   </div>
                 </>

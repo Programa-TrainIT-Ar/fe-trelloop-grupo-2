@@ -3,8 +3,21 @@ import Image from "next/image";
 import MemberSearchResult from "components/Edit/form/view/MemberSearchResult";
 import { useResponsibleSearch } from "hooks/useResponsibleSearch";
 
-const DEFAULT_IMAGE_URL =
-  "https://res.cloudinary.com/djw3lkdam/image/upload/v1754147240/samples/cloudinary-icon.png";
+// URL default de backend
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
+
+// Array de avatares por defecto
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+
+// Función para obtener avatar basado en índice
+const getAvatarSrc = (index: number) => {
+  return AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+};
 
 type Member = {
   id: string;
@@ -32,6 +45,18 @@ const Responsible = ({ members, onDelete, onAdd, boardId }: MembersProps) => {
     setQuery("");
   };
 
+  // Transformar resultados de búsqueda para usar avatares locales si es necesario
+  const transformedResults = results.map((user, index) => {
+    const transformedUser = {
+      id: String(user.id),
+      name: `${user.name} ${user.last_name || ""}`.trim(),
+      username: user.email?.split("@")[0] || "usuario",
+      img: user.avatar_url && user.avatar_url !== DEFAULT_CLOUDINARY_URL ? user.avatar_url : getAvatarSrc(index),
+      email: user.email,
+    };
+    return transformedUser;
+  });
+
   return (
     <div className="space-y-2">
       <label className="block text-white font-medium pt-1">Responsables</label>
@@ -42,7 +67,7 @@ const Responsible = ({ members, onDelete, onAdd, boardId }: MembersProps) => {
           placeholder="Buscar por nombre o @usuario..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full h-[41px] bg-[#ffffff0a] text-sm text-white placeholder-[#797676] rounded-[10px]  border border-solid border-[#3c3c3cb2] outline-none focus:ring-1 focus:ring-[#6a5fff] focus:border-[#6a5fff] transition-all duration-200 [font-family:'Poppins',Helvetica] pr-10 px-2.5 py-[9px] font-normal"
+          className="w-full h-[41px] bg-[#ffffff0a] text-sm text-white placeholder-[#797676] rounded-[10px] border border-solid border-[#3c3c3cb2] outline-none focus:ring-1 focus:ring-[#6a5fff] focus:border-[#6a5fff] transition-all duration-200 [font-family:'Poppins',Helvetica] pr-10 px-2.5 py-[9px] font-normal"
         />
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white pointer-events-none">
           <svg
@@ -61,25 +86,15 @@ const Responsible = ({ members, onDelete, onAdd, boardId }: MembersProps) => {
           </svg>
         </div>
 
-        {query && results.length > 0 && (
+        {query && transformedResults.length > 0 && (
           <div className="absolute top-[46px] left-0 w-full bg-[#1e1e1e] border border-[#3a3a3a] rounded-[10px] mt-1 z-10">
-            {results.map((user) => {
-              const transformedUser = {
-                id: String(user.id),
-                name: `${user.name} ${user.last_name}`.trim(),
-                username: user.email?.split("@")[0] || "usuario",
-                img: user.avatar_url || DEFAULT_IMAGE_URL,
-                email: user.email,
-              };
-
-              return (
-                <MemberSearchResult
-                  key={transformedUser.id}
-                  user={transformedUser}
-                  onSelect={handleSelect}
-                />
-              );
-            })}
+            {transformedResults.map((user) => (
+              <MemberSearchResult
+                key={user.id}
+                user={user}
+                onSelect={handleSelect}
+              />
+            ))}
           </div>
         )}
 
@@ -94,7 +109,7 @@ const Responsible = ({ members, onDelete, onAdd, boardId }: MembersProps) => {
         {members.map((member) => (
           <div className="flex items-center mr-[15px] mt-[8px]" key={member.id}>
             <Image
-              src={member.img || DEFAULT_IMAGE_URL}
+              src={member.img || getAvatarSrc(0)} // Fallback a avatar local si img no está definido
               alt="member-img"
               width={28}
               height={28}

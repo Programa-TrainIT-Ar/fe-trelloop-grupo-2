@@ -3,8 +3,21 @@ import Image from "next/image";
 import { useMemberSearch } from "../controllers/useMemberSearch";
 import MemberSearchResult from "./MemberSearchResult";
 
-const DEFAULT_IMAGE_URL =
-  "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
+// URL default de backend
+const DEFAULT_CLOUDINARY_URL = "https://res.cloudinary.com/djw3lkdam/image/upload/v1757691992/cloudinary-icon-_f32b9t.png";
+
+// Array de avatares por defecto
+const AVATAR_IMAGES = [
+  "/assets/icons/avatar1.png",
+  "/assets/icons/avatar2.png",
+  "/assets/icons/avatar3.png",
+  "/assets/icons/avatar4.png",
+];
+
+// Función para obtener avatar basado en índice o ID (usamos índice para simplicidad)
+const getAvatarSrc = (index: number) => {
+  return AVATAR_IMAGES[index % AVATAR_IMAGES.length];
+};
 
 type Member = {
   id: string;
@@ -64,12 +77,12 @@ const Members = ({ members, onDelete, onAdd }: MembersProps) => {
 
         {query && results.length > 0 && (
           <div className="absolute top-[46px] left-0 w-full bg-[#1e1e1e] border border-[#3a3a3a] rounded-[10px] mt-1 z-10">
-            {results.map((user) => {
+            {results.map((user, index) => {
               const transformedUser = {
                 id: String(user.id),
                 name: `${user.name} ${user.last_name}`.trim(),
                 username: user.email?.split("@")[0] || "usuario",
-                img: user.avatar_url || DEFAULT_IMAGE_URL,
+                img: (user.avatar_url && user.avatar_url !== DEFAULT_CLOUDINARY_URL) ? user.avatar_url : getAvatarSrc(index),
                 email: user.email,
               };
 
@@ -92,13 +105,13 @@ const Members = ({ members, onDelete, onAdd }: MembersProps) => {
       </div>
 
       <div className="flex mt-[5px] flex-wrap">
-        {members.map((member) => (
+        {members.map((member, index) => (
           <div
             className="flex items-center mr-[15px] mt-[8px]"
             key={member.id}
           >
             <Image
-              src={member.img || DEFAULT_IMAGE_URL}
+              src={(member.img && member.img !== DEFAULT_CLOUDINARY_URL) ? member.img : getAvatarSrc(index)}
               alt="member-img"
               width={28}
               height={28}
@@ -135,5 +148,3 @@ const Members = ({ members, onDelete, onAdd }: MembersProps) => {
 };
 
 export default Members;
-
-
