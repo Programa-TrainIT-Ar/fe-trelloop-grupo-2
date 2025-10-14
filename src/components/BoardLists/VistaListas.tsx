@@ -115,6 +115,7 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean; isBoardMe
         )
       );
 
+
       setEditandoListaId(null);
       getBoardLists(); // Aún así sincronizamos con el backend
     } catch (err) {
@@ -122,6 +123,11 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean; isBoardMe
       // En caso de error, revertimos con getBoardLists
       getBoardLists();
     }
+  };
+
+
+  const handleOptimisticDelete = (listId: number) => {
+    setLocalLists((prev) => prev.filter((list) => list.id !== listId));
   };
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -402,6 +408,7 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean; isBoardMe
                         list={list}
                         getBoardLists={getBoardLists}
                         isBoardOwner={isBoardOwner}
+                        onOptimisticDelete={handleOptimisticDelete}  // ✅ Agregar esta línea
                       />
                     </div>
                   </div>
