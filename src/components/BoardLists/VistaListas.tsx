@@ -107,13 +107,28 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean; isBoardMe
     if (!nuevoTitulo.trim()) return;
     try {
       await updateListService(Number(boardId), listId, nuevoTitulo);
+
+      // ✅ Actualización optimista inmediata
+      setLocalLists((prev) =>
+        prev.map((list) =>
+          list.id === listId ? { ...list, name: nuevoTitulo } : list
+        )
+      );
+
+
       setEditandoListaId(null);
-      getBoardLists();
+      getBoardLists(); // Aún así sincronizamos con el backend
     } catch (err) {
       console.error("Error actualizando lista", err);
+      // En caso de error, revertimos con getBoardLists
+      getBoardLists();
     }
   };
 
+
+  const handleOptimisticDelete = (listId: number) => {
+    setLocalLists((prev) => prev.filter((list) => list.id !== listId));
+  };
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const activeId = typeof active.id === "string" ? Number(active.id) : (active.id as number);
@@ -393,6 +408,7 @@ const VistaListas: React.FC<{ boardId: string; isBoardOwner?: boolean; isBoardMe
                         list={list}
                         getBoardLists={getBoardLists}
                         isBoardOwner={isBoardOwner}
+                        onOptimisticDelete={handleOptimisticDelete}  // ✅ Agregar esta línea
                       />
                     </div>
                   </div>

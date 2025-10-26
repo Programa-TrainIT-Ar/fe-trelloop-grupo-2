@@ -5,23 +5,24 @@ import { deleteListService } from "services/listService";
 interface DeleteListButtonProps {
   boardId: string;
   list: { id: number; name: string; cards?: any[] };
-  isBoardOwner?: boolean;                    
-  isBoardMember?: boolean;                   
+  isBoardOwner?: boolean;
+  isBoardMember?: boolean;
   getBoardLists: () => Promise<void>;
+  onOptimisticDelete?: (listId: number) => void; // ✅ Nuevo callback
 }
 
 const DeleteListButton: React.FC<DeleteListButtonProps> = ({
   boardId,
   list,
   isBoardOwner = false,
-  isBoardMember = false,                     
+  isBoardMember = false,
   getBoardLists,
+  onOptimisticDelete, // ✅ Recibimos el callback
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const hasCards = (list.cards?.length || 0) > 0;
-  //Nuevo criterio: habilitar si está vacía, si soy owner, o si soy miembro
   const canDelete = !hasCards || isBoardOwner || isBoardMember;
 
   const openConfirm = () => {
@@ -34,10 +35,18 @@ const DeleteListButton: React.FC<DeleteListButtonProps> = ({
       setLoading(true);
       await deleteListService({ boardId: Number(boardId), listId: list.id });
       setOpen(false);
-      await getBoardLists(); // actualizar UI sin recargar
+
+      // ✅ Actualización optimista inmediata
+      if (onOptimisticDelete) {
+        onOptimisticDelete(list.id);
+      }
+
+      await getBoardLists(); // Aún sincronizamos con el backend
     } catch (err: any) {
       alert(err?.message || "Error al eliminar la lista");
       console.error(err);
+      // En caso de error, resincronizamos
+      await getBoardLists();
     } finally {
       setLoading(false);
     }
@@ -58,7 +67,7 @@ const DeleteListButton: React.FC<DeleteListButtonProps> = ({
             : "No puedes borrar: la lista tiene tarjetas y no eres el creador"
         }
         className={`w-[22px] h-[22px] grid place-items-center rounded-[4px] 
-          ${canDelete ? "bg-[#3A3A3A]cursor-pointer" : "bg-[#3A3A3A] opacity-50 cursor-not-allowed"}`}
+  ${canDelete ? "bg-transparent cursor-pointer" : "bg-transparent opacity-50 cursor-not-allowed"}`}
       >
         <img src="/assets/icons/trash.png" alt="Eliminar" className="w-3.5 h-3.5" />
       </button>
