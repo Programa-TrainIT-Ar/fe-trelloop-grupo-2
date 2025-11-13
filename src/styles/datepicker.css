@@ -1,0 +1,55 @@
+.react-datepicker {
+  @apply font-poppins text-white bg-[#2a2a2a];
+  border:#2a2a2a !important;
+}
+
+.react-datepicker__month-container {
+  @apply bg-[#2a2a2a] rounded-xl;
+}
+
+.react-datepicker__header {
+  @apply bg-[#2a2a2a] border-b border-[#2a2a2a] text-white;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header {
+  @apply text-white;
+}
+
+.react-datepicker__day-name,
+.react-datepicker__day,
+.react-datepicker__time-name {
+  @apply text-white;
+}
+
+/* Estilos para los días y el rango seleccionado */
+.react-datepicker__day--in-selecting-range,
+.react-datepicker__day--in-range {
+  @apply rounded-lg bg-[#6A5FFF] text-white;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  @apply rounded-lg bg-[#6A5FFF] text-white;
+}
+
+.react-datepicker__day--in-range:not(.react-datepicker__day--selected) {
+  background-color: #6A5FFF !important; /* Un color para el rango */
+  color: white !important;
+}
+
+/* Estilos al pasar el mouse */
+.react-datepicker__day:not(.react-datepicker__day--in-range):not(.react-datepicker__day--selected):hover {
+  @apply rounded-lg bg-[#6A5FFF] text-white;
+}
+
+/* Flechas de navegación del calendario */
+.react-datepicker__navigation--previous,
+.react-datepicker__navigation--next {
+  @apply filter invert; /* Invertir el color para que sean blancos */
+}
+
+/* Ocultar el input por defecto del DatePicker */
+.react-datepicker__input-container {
+  display: none;
+}
